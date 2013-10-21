@@ -1,0 +1,652 @@
+<?php
+
+/**
+ * @file
+ * Main CleanTalk integration module functions.
+ */
+
+/**
+ * CleanTalk Drupal and Module versions.
+ */
+define('CLEANTALK_DRUPAL_VERSION', '7');
+define('CLEANTALK_MODULE_VERSION', '1.0');
+define('CLEANTALK_MODULE_HOMEURL', 'http://www.drupal.org/project/cleantalk');
+
+/**
+ * Implements hook_form_alter().
+ */
+function cleantalk_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_register_form'
+    || $form_id == 'comment_node_page_form'
+    || $form_id == 'comment_node_article_form'
+  ) {
+    switch ($form_id) {
+      case 'user_register_form':
+        $dom_form_id = 'user-register-form';
+        $session_time_key = 'ct_submit_register_time';
+        break;
+
+      case 'comment_node_page_form':
+      case 'comment_node_article_form':
+        $dom_form_id = 'comment-form';
+        $session_time_key = 'ct_submit_comment_time';
+        break;
+
+      default:
+        $dom_form_id = FALSE;
+    }
+    if ($dom_form_id != FALSE &&
+            // Only new rendered from.
+            (
+            array_key_exists('input', $form_state)
+            && is_array($form_state['input'])
+            && count($form_state['input']) == 0
+            ||
+            array_key_exists('input', $form_state)
+            && !is_array($form_state['input'])
+            ||
+            !array_key_exists('input', $form_state)
+            )
+    ) {
+      // drupal_set_message($form_id);  // print form ID - great for gebug!
+      $_SESSION[$session_time_key] = time();
+      $ct_check_value = md5(rand(0, 1000));
+      $_SESSION['ct_check_key'] = $ct_check_value;
+
+      $form['ct_checkjs'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+        '#suffix' => "<script type=\"text/javascript\">\n" .
+        "setTimeout(\"document.getElementById('" . $dom_form_id .
+        "').ct_checkjs.value = document.getElementById('" . $dom_form_id .
+        "').ct_checkjs.value.replace('0', '" . $ct_check_value .
+        "');\",1000);\n</script>\n",
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function cleantalk_entity_presave($entity, $type) {
+  if ($type != 'comment' && $type != 'user') {
+    return;
+  }
+  // Don't check comment from reged user with >= 'ct_comments' approved msgs.
+  if ($type == 'comment'
+    && property_exists($entity, 'is_anonymous') && $entity->is_anonymous == 0
+    && property_exists($entity, 'uid') && $entity->uid > 0
+  ) {
+    $result = db_query(
+      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+      array(':uid' => $entity->uid)
+    );
+    $count = $result->fetchObject()->count;
+    $ct_comments = variable_get('ct_comments', 3);
+    if ($ct_comments < 1) {
+      $ct_comments = 1;
+      variable_set('ct_comments', 1);
+    }
+    if ($count >= $ct_comments) {
+      return;
+    }
+  }
+  if (
+    $type == 'user'
+    && property_exists($entity, 'is_new') && $entity->is_new == 1
+    && property_exists($entity, 'uid') && $entity->uid == 0
+    ||
+    $type == 'comment'
+  ) {
+    require_once dirname(__FILE__) . '/cleantalk.class.php';
+
+    $ct_key = variable_get('ct_key', '');
+    $ct_ws = _cleantalk_get_ws();
+
+    if (!isset($_POST['ct_checkjs']) || !isset($_SESSION['ct_check_key'])) {
+      $checkjs = NULL;
+    }
+    elseif ($_POST['ct_checkjs'] == $_SESSION['ct_check_key']) {
+      $checkjs = 1;
+    }
+    else {
+      $checkjs = 0;
+    }
+
+    if (isset($_SERVER['HTTP_USER_AGENT'])) {
+      $user_agent = htmlspecialchars((string) $_SERVER['HTTP_USER_AGENT']);
+    }
+    else {
+      $user_agent = NULL;
+    }
+
+    if (isset($_SERVER['HTTP_REFERER'])) {
+      $refferrer = htmlspecialchars((string) $_SERVER['HTTP_REFERER']);
+    }
+    else {
+      $refferrer = NULL;
+    }
+
+    $ct = new Cleantalk();
+    $ct->work_url = $ct_ws['work_url'];
+    $ct->server_url = $ct_ws['server_url'];
+    $ct->server_ttl = $ct_ws['server_ttl'];
+    $ct->server_changed = $ct_ws['server_changed'];
+
+    $sender_info = json_encode(
+      array(
+        'cms_lang' => 'en',
+        'REFFERRER' => $refferrer,
+        'post_url' => $refferrer,
+        'USER_AGENT' => $user_agent,
+      )
+    );
+
+    $ct_request = new CleantalkRequest();
+    $ct_request->auth_key = $ct_key;
+    $ct_request->agent = 'drupal-101';
+    $ct_request->response_lang = 'en';
+    $ct_request->js_on = $checkjs;
+    $ct_request->sender_info = $sender_info;
+    $ct_request->sender_email = property_exists($entity, 'mail') ? $entity->mail : NULL;
+    $ct_request->sender_nickname = property_exists($entity, 'name') ? $entity->name : NULL;
+    $ct_request->sender_ip = ip_address();
+
+    $ct_submit_time = NULL;
+    switch ($type) {
+      case 'comment':
+        if (isset($_SESSION['ct_submit_comment_time'])) {
+          $ct_submit_time = time() - $_SESSION['ct_submit_comment_time'];
+        }
+        $timelabels_key = 'mail_error_comment';
+        $ct_request->submit_time = $ct_submit_time;
+
+        $comment_subject = property_exists($entity, 'subject') ? $entity->subject : '';
+        $comment_lang = property_exists($entity, 'language') ? $entity->language : 'und';
+        $comment_body = (property_exists($entity, 'comment_body') && is_array($entity->comment_body)) ? $entity->comment_body[$comment_lang][0]['value'] : '';
+        $ct_request->message = $comment_subject . " \n\n" . $comment_body;
+
+        // Must be = node text + last 10 comments.
+        $example = '';
+
+        // Additional info about node.
+        $post_info = '';
+
+        // Node id of commented entity - page or article.
+        $nid = property_exists($entity, 'nid') ? $entity->nid : NULL;
+        if ($nid != NULL) {
+          $a_example = array();
+          $a_post_info = array();
+
+          // Find node.
+          $result_node = node_load($nid);
+          if ($result_node) {
+            $node_lang = property_exists($result_node, 'language') ? $result_node->language : 'und';
+            $a_example['title'] = property_exists($result_node, 'title') ? $result_node->title : '';
+            $a_example['body'] = (property_exists($result_node, 'body') && is_array($result_node->body)) ? $result_node->body[$node_lang][0]['value'] : '';
+            $a_post_info['comment_type'] = 'comment';
+          }
+
+          // Find last 10 comments.
+          $result_10 = db_query(
+                  'SELECT comment.subject AS subject,field_data_comment_body.comment_body_value AS value FROM {comment} LEFT JOIN {field_data_comment_body} ON comment.cid=field_data_comment_body.entity_id WHERE comment.nid=:nid AND comment.status=1 order by changed desc limit 10',
+                  array(':nid' => $nid)
+          );
+          $a_example['comments'] = '';
+          foreach ($result_10 as $record) {
+            $a_example['comments'] .= $record->subject . " \n\n" . $record->value . " \n\n";
+          }
+
+          // JSON format.
+          $example = json_encode($a_example);
+          $post_info = json_encode($a_post_info);
+
+          // Plain text format.
+          if ($example === FALSE) {
+            $example = '';
+            if ($result_node) {
+              $example .= $a_example['title'] . " \n\n" . $a_example['body'] . " \n\n";
+            }
+            $example .= $a_example['comments'];
+          }
+          if ($post_info === FALSE) {
+            $post_info = '';
+          }
+        }
+        // Node text + last 10 comments in json or plain text format.
+        $ct_request->example = $example;
+        $ct_request->post_info = $post_info;
+        $ct_result = $ct->isAllowMessage($ct_request);
+        break;
+
+      case 'user':
+        if (isset($_SESSION['ct_submit_register_time'])) {
+          $ct_submit_time = time() - $_SESSION['ct_submit_register_time'];
+        }
+        $timelabels_key = 'mail_error_reg';
+        $ct_request->submit_time = $ct_submit_time;
+        $ct_request->tz = property_exists($entity, 'timezone') ? $entity->timezone : NULL;
+        $ct_result = $ct->isAllowUser($ct_request);
+        break;
+
+    }
+
+    if ($ct->server_change) {
+      _cleantalk_set_ws(
+              $ct->work_url, $ct->server_url, $ct->server_ttl, time()
+      );
+    }
+
+    // First check errstr flag.
+    if (!empty($ct_result->errstr)
+      || (!empty($ct_result->inactive) && $ct_result->inactive == 1)
+    ) {
+      // Cleantalk error so we go default way (no action at all).
+      // Just inform admin.
+      $err_title = 'CleanTalk hook error';
+      if (empty($ct_result->inactive) && $ct_result->inactive == 1) {
+        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->comment);
+      }
+      else {
+        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->errstr);
+      }
+
+      $send_flag = FALSE;
+      $insert_flag = FALSE;
+
+      $result = db_query(
+        'SELECT ct_value FROM {cleantalk_timelabels} WHERE ct_key=:timelabels_key',
+        array(':timelabels_key' => $timelabels_key)
+      );
+      if ($result->rowCount() == 0) {
+        $send_flag = TRUE;
+        $insert_flag = TRUE;
+      }
+      elseif (time() - 900 > $result->fetchObject()->ct_value) {
+        // 15 minutes.
+        $send_flag = TRUE;
+        $insert_flag = FALSE;
+      }
+
+      if ($send_flag) {
+        if ($insert_flag) {
+          db_insert('cleantalk_timelabels')
+          ->fields(array(
+            'ct_key' => $timelabels_key,
+            'ct_value' => time(),
+          ))
+          ->execute();
+        }
+        else {
+          db_update('cleantalk_timelabels')
+          ->fields(array(
+            'ct_value' => time(),
+           ))
+           ->condition('ct_key', $timelabels_key, '=')
+           ->execute();
+        }
+
+        $my_module = 'cleantalk';
+        $to = variable_get('site_mail', ini_get('sendmail_from'));
+        $from = 'noc@cleantalk.ru';
+        if (!empty($to)) {
+          $message = array(
+            'id' => $my_module . '_' . $timelabels_key,
+            'to' => $to,
+            'subject' => $err_title,
+            'body' => array($err_str),
+            'headers' => array(
+              'From' => $from,
+              'Sender' => $from,
+              'Return-Path' => $from,
+            ),
+          );
+          $system = drupal_mail_system($my_module, $timelabels_key);
+          $system->mail($system->format($message));
+        }
+      }
+      return;
+    }
+
+    if ($ct_result->allow == 1) {
+      // Not spammer.
+      // Store request_id in globals to store it in DB later.
+      $GLOBALS['ct_request_id'] = $ct_result->id;
+      // $GLOBALS['ct_result_comment'] - don't store, means good comment.
+    }
+    else {
+      // Spammer.
+      // Check stop_queue flag.
+      if ($type == 'comment' && $ct_result->stop_queue == 0) {
+        // Spammer and stop_queue == 0 - to manual approvement.
+        // Store request_id and comment in globals to store them in DB later.
+        $GLOBALS['ct_request_id'] = $ct_result->id;
+        // Store $GLOBALS['ct_result_comment'] - means bad comment.
+        $GLOBALS['ct_result_comment'] = $ct_result->comment;
+      }
+      else {
+        // New user or Spammer and stop_queue == 1 - display message and exit.
+        ?>
+        <html>
+          <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+            <style>
+              .ct {
+                width: 500px;
+                border: 1px solid gray;
+                box-shadow: 0 0 10px gray;
+                font: normal 14px Arial;
+                padding: 30px;
+                margin: 30px auto;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="ct">
+        <?php
+        echo $ct_result->comment;
+        ?>
+              <br /><br /><a href="#" onclick="history.back()">Go back</a>
+              <script>setTimeout("history.back()", 5000);</script>
+            </div>
+          </body>
+        </html>
+              <?php
+              exit();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_comment_insert().
+ */
+function cleantalk_comment_insert($comment) {
+  if (isset($GLOBALS['ct_request_id'])) {
+    // Values of request_id and comment are stored in globals.
+    // Store them in DB now.
+    db_insert('cleantalk_cids')
+    ->fields(array(
+    'cid' => $comment->cid,
+    'ct_request_id' => $GLOBALS['ct_request_id'],
+    'ct_result_comment' => isset($GLOBALS['ct_result_comment']) ? $GLOBALS['ct_result_comment'] : '',
+    ))
+    ->execute();
+
+    $ct_automod = variable_get('ct_automod', 1);
+    if ($ct_automod == 1) {
+      // Automoderation enabled - change comment status.
+      // $GLOBALS['ct_result_comment'] means bad comment, set status = 0.
+      // No $GLOBALS['ct_result_comment'] means good comment, set status = 1.
+      db_update('comment')
+      ->fields(array(
+        'status' => isset($GLOBALS['ct_result_comment']) ? COMMENT_NOT_PUBLISHED : COMMENT_PUBLISHED,
+      ))
+      ->condition('cid', $comment->cid, '=')
+      ->execute();
+    }
+
+    unset($GLOBALS['ct_request_id']);
+  }
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function cleantalk_user_insert(&$edit, $account, $category) {
+  if ($category != 'account') {
+    return;
+  }
+  if (isset($GLOBALS['ct_request_id'])) {
+    db_insert('cleantalk_uids')
+    ->fields(array(
+    'uid' => $account->uid,
+    'ct_request_id' => $GLOBALS['ct_request_id'],
+    'ct_result_comment' => isset($GLOBALS['ct_result_comment']) ? $GLOBALS['ct_result_comment'] : '',
+    ))
+    ->execute();
+    unset($GLOBALS['ct_request_id']);
+  }
+}
+
+/**
+ * Implements hook_comment_publish().
+ */
+function cleantalk_comment_publish($comment) {
+  $result = db_query(
+    'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids} WHERE cid=:cid LIMIT 1',
+     array(':cid' => $comment->cid)
+  );
+  if ($result->rowCount() > 0) {
+    $ct_result = $result->fetchObject();
+    // If ct_result_comment is not empty then comment is not approved by server.
+    // But we publish it then comment is approved by admin.
+    // We need to send positive feedback.
+    _cleantalk_send_feedback($ct_result->ct_request_id, 1);
+    db_delete('cleantalk_cids')
+    ->condition('cid', $comment->cid, '=')
+    ->execute();
+  }
+}
+
+/**
+ * Implements hook_comment_delete().
+ */
+function cleantalk_comment_delete($comment) {
+  $result = db_query(
+    'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids} WHERE cid=:cid LIMIT 1',
+     array(':cid' => $comment->cid)
+  );
+  if ($result->rowCount() > 0) {
+    $ct_result = $result->fetchObject();
+    // If ct_result_comment is empty then comment is approved by server.
+    // But we delete it then comment is not approved by admin.
+    // We need to send negative feedback.
+    _cleantalk_send_feedback($ct_result->ct_request_id, 0);
+    db_delete('cleantalk_cids')
+    ->condition('cid', $comment->cid, '=')
+    ->execute();
+  }
+}
+
+/**
+ * Implements hook_user_delete().
+ */
+function cleantalk_user_delete($account) {
+  $result = db_query(
+    'SELECT ct_request_id,ct_result_comment FROM {cleantalk_uids} WHERE uid=:uid LIMIT 1',
+    array(':uid' => $account->uid)
+  );
+  if ($result->rowCount() > 0) {
+    $ct_result = $result->fetchObject();
+    // If ct_result_comment is empty then user is approved by server.
+    // But we delete it then user is not approved by admin.
+    // We need to send negative feedback.
+    _cleantalk_send_feedback($ct_result->ct_request_id, 0);
+    db_delete('cleantalk_uids')
+    ->condition('uid', $account->uid, '=')
+    ->execute();
+  }
+}
+
+/**
+ * Implements hook_comment_view_alter().
+ */
+function cleantalk_comment_view_alter(&$build) {
+  global $user;
+  // Remember - 'administrator' role name can be changed from admin panel!
+  // But permission name cannot.
+  // So we cannot find 'administrator' role only, we must use permission name.
+  if (user_is_logged_in()) {
+    // Falg to show CleanTalk comment in site comment body.
+    $show_ct_comment = FALSE;
+
+    // First check an usual 'administrator' role name - it's OK in 99%
+    if (in_array('administrator', $user->roles)) {
+      $show_ct_comment = TRUE;
+    }
+
+    // Next check 'administer comments' permission.
+    if (!$show_ct_comment) {
+      // Get all roles who have 'administer comments' permission.
+      $roles = user_roles(TRUE, 'administer comments');
+      foreach ($roles as $role) {
+        if (in_array($role, $user->roles)) {
+          $show_ct_comment = TRUE;
+          break;
+        }
+      }
+    }
+
+    if ($show_ct_comment) {
+      $result = db_query(
+        'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids} WHERE cid=:cid LIMIT 1',
+        array(':cid' => $build['#comment']->cid)
+      );
+      if ($result->rowCount() > 0) {
+        $ct_result = $result->fetchObject();
+        if (!empty($ct_result->ct_result_comment)) {
+          $build['comment_body'][0]['#markup'] .= '<hr>' . $ct_result->ct_result_comment;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function cleantalk_menu() {
+  $items['admin/config/cleantalk'] = array(
+    'title' => t('Antispam by CleanTalk'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cleantalk_settings_form'),
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * Cleantalk settings form.
+ */
+function cleantalk_settings_form($form, &$form_state) {
+  $ct_comments_min = 1;
+  $ct_comments_default = 3;
+
+  $ct_key = variable_get('ct_key', 'enter key');
+  $ct_comments = variable_get('ct_comments', $ct_comments_default);
+  if ($ct_comments < $ct_comments_min) {
+    $ct_comments = $ct_comments_min;
+    variable_set('ct_comments', $ct_comments_min);
+  }
+  $ct_automod = variable_get('ct_automod', 1);
+
+  $form['ct_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Access key'),
+    '#size' => 10,
+    '#maxlength' => 10,
+    '#default_value' => $ct_key,
+    '#description' => t(
+      'Click <a target="__blank" href="!ct_link">here</a> to get access key.',
+      array(
+        '!ct_link' => url('http://cleantalk.org/register?platform=drupal'),
+      )
+    ),
+  );
+
+  $form['ct_comments'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minimum approved comments per registered user'),
+    '#size' => 5,
+    '#maxlength' => 5,
+    '#default_value' => $ct_comments,
+    '#description' => t('Moderate messages of guests and registered users who have approved messages less than this value (must be more than 0).'),
+  );
+
+  $form['ct_automod'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable automoderation'),
+    '#default_value' => $ct_automod,
+    '#description' => t('Automatically publish good messages and put bad ones to admin approvement.<br /><span class="admin-enabled">Note: It overrides "Skip comment approval" permissions.</span>'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Cleantalk inner function - gets working server.
+ */
+function _cleantalk_get_ws() {
+  $result = db_query('SELECT work_url,server_url,server_ttl,server_changed FROM {cleantalk_server} LIMIT 1');
+  if ($result->rowCount() > 0) {
+    $current_ws = $result->fetchObject();
+    return array(
+      'work_url' => $current_ws->work_url,
+      'server_url' => $current_ws->server_url,
+      'server_ttl' => $current_ws->server_ttl,
+      'server_changed' => $current_ws->server_changed,
+    );
+  }
+  else {
+    return array(
+      'work_url' => 'http://moderate.cleantalk.ru',
+      'server_url' => 'http://moderate.cleantalk.ru',
+      'server_ttl' => 0,
+      'server_changed' => 0,
+    );
+  }
+}
+
+/**
+ * Cleantalk inner function - sets working server.
+ */
+function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru', $server_url = 'http://moderate.cleantalk.ru', $server_ttl = 0, $server_changed = 0) {
+  $result = db_query('SELECT count(*) AS count FROM {cleantalk_server}');
+  $count = $result->fetchObject()->count;
+  if ($count > 0) {
+    db_update('cleantalk_server')
+    ->fields(array(
+      'work_url' => $work_url,
+      'server_url' => $server_url,
+      'server_ttl' => $server_ttl,
+      'server_changed' => $server_changed,
+    ))
+    ->execute();
+  }
+  else {
+    db_insert('cleantalk_server')
+    ->fields(array(
+      'work_url' => $work_url,
+      'server_url' => $server_url,
+      'server_ttl' => $server_ttl,
+      'server_changed' => $server_changed,
+    ))
+    ->execute();
+  }
+}
+
+/**
+ * Cleantalk inner function - sends feedback to server.
+ */
+function _cleantalk_send_feedback($request_id, $feedback) {
+  require_once dirname(__FILE__) . '/cleantalk.class.php';
+
+  $ct_key = variable_get('ct_key', '');
+  $ct_ws = _cleantalk_get_ws();
+
+  $ct = new Cleantalk();
+  $ct->work_url = $ct_ws['work_url'];
+  $ct->server_url = $ct_ws['server_url'];
+  $ct->server_ttl = $ct_ws['server_ttl'];
+  $ct->server_changed = $ct_ws['server_changed'];
+
+  $ct_request = new CleantalkRequest();
+  $ct_request->auth_key = $ct_key;
+  $ct_request->agent = 'drupal-101';
+  $ct_request->sender_ip = ip_address();
+  $ct_request->feedback = $request_id . ':' . $feedback;
+
+  $ct->sendFeedback($ct_request);
+}

@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall functions, schema definition for the CleanTalk module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function cleantalk_schema() {
+  $schema['cleantalk_timelabels'] = array(
+    'fields' => array(
+      'ct_key' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ct_value' => array(
+        'type' => 'int',
+        'length' => 12,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('ct_key'),
+  );
+  $schema['cleantalk_cids'] = array(
+    'fields' => array(
+      'cid' => array(
+        'type' => 'int',
+        'length' => 12,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ct_request_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ct_result_comment' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('cid'),
+  );
+  $schema['cleantalk_uids'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'length' => 12,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'ct_request_id' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ct_result_comment' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+  $schema['cleantalk_server'] = array(
+    'fields' => array(
+      'work_url' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'server_url' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'server_ttl' => array(
+        'type' => 'int',
+        'length' => 12,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'server_changed' => array(
+        'type' => 'int',
+        'length' => 12,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function cleantalk_install() {
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function cleantalk_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'cleantalk%'");
+  cache_clear_all('variables', 'cache');
+}
