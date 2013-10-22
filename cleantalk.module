@@ -163,7 +163,8 @@ function cleantalk_entity_presave($entity, $type) {
         $ct_request->submit_time = $ct_submit_time;
 
         $comment_subject = property_exists($entity, 'subject') ? $entity->subject : '';
-        $comment_lang = property_exists($entity, 'language') ? $entity->language : 'und';
+        $comment_lang = property_exists($entity, 'language') ? $entity->language : LANGUAGE_NONE;
+
         if (property_exists($entity, 'comment_body') && is_array($entity->comment_body)) {
           if (
             array_key_exists($comment_lang, $entity->comment_body) &&
@@ -176,14 +177,14 @@ function cleantalk_entity_presave($entity, $type) {
             $comment_body = $entity->comment_body[$comment_lang][0]['value'];
           }
           elseif (
-            array_key_exists('und', $entity->comment_body) &&
-            is_array($entity->comment_body['und']) &&
-            array_key_exists(0, $entity->comment_body['und']) &&
-            is_array($entity->comment_body['und'][0]) &&
-            array_key_exists('value', $entity->comment_body['und'][0]) &&
-            is_string($entity->comment_body['und'][0]['value'])
+            array_key_exists(LANGUAGE_NONE, $entity->comment_body) &&
+            is_array($entity->comment_body[LANGUAGE_NONE]) &&
+            array_key_exists(0, $entity->comment_body[LANGUAGE_NONE]) &&
+            is_array($entity->comment_body[LANGUAGE_NONE][0]) &&
+            array_key_exists('value', $entity->comment_body[LANGUAGE_NONE][0]) &&
+            is_string($entity->comment_body[LANGUAGE_NONE][0]['value'])
           ) {
-            $comment_body = $entity->comment_body['und'][0]['value'];
+            $comment_body = $entity->comment_body[LANGUAGE_NONE][0]['value'];
           }
           else {
             $comment_body = '';
@@ -206,7 +207,7 @@ function cleantalk_entity_presave($entity, $type) {
           // Find node.
           $result_node = node_load($nid);
           if ($result_node) {
-            $node_lang = property_exists($result_node, 'language') ? $result_node->language : 'und';
+            $node_lang = property_exists($result_node, 'language') ? $result_node->language : LANGUAGE_NONE;
             $a_example['title'] = property_exists($result_node, 'title') ? $result_node->title : '';
 
             if (property_exists($result_node, 'body') && is_array($result_node->body)) {
@@ -221,14 +222,14 @@ function cleantalk_entity_presave($entity, $type) {
                 $a_example['body'] = $result_node->body[$comment_lang][0]['value'];
               }
               elseif (
-                array_key_exists('und', $result_node->body) &&
-                is_array($result_node->body['und']) &&
-                array_key_exists(0, $result_node->body['und']) &&
-                is_array($result_node->body['und'][0]) &&
-                array_key_exists('value', $result_node->body['und'][0]) &&
-                is_string($result_node->body['und'][0]['value'])
+                array_key_exists(LANGUAGE_NONE, $result_node->body) &&
+                is_array($result_node->body[LANGUAGE_NONE]) &&
+                array_key_exists(0, $result_node->body[LANGUAGE_NONE]) &&
+                is_array($result_node->body[LANGUAGE_NONE][0]) &&
+                array_key_exists('value', $result_node->body[LANGUAGE_NONE][0]) &&
+                is_string($result_node->body[LANGUAGE_NONE][0]['value'])
               ) {
-                $a_example['body'] = $result_node->body['und'][0]['value'];
+                $a_example['body'] = $result_node->body[LANGUAGE_NONE][0]['value'];
               }
               else {
                 $a_example['body'] = '';
