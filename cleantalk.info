@@ -2,10 +2,3 @@ name = Antispam by CleanTalk
 description = Antispam service from <a target="__blank" href="http://cleantalk.org">CleanTalk</a> to protect your site
 configure = admin/config/cleantalk
 core = 7.x
-
-files[] = cleantalk.install
-; We don't need automatic scan of these files
-; see https://drupal.org/node/542202
-;files[] = JSON.php
-;files[] = cleantalk.class.php
-
