@@ -164,7 +164,31 @@ function cleantalk_entity_presave($entity, $type) {
 
         $comment_subject = property_exists($entity, 'subject') ? $entity->subject : '';
         $comment_lang = property_exists($entity, 'language') ? $entity->language : 'und';
-        $comment_body = (property_exists($entity, 'comment_body') && is_array($entity->comment_body)) ? $entity->comment_body[$comment_lang][0]['value'] : '';
+        if (property_exists($entity, 'comment_body') && is_array($entity->comment_body)) {
+          if (
+            array_key_exists($comment_lang, $entity->comment_body) &&
+            is_array($entity->comment_body[$comment_lang]) &&
+            array_key_exists(0, $entity->comment_body[$comment_lang]) &&
+            is_array($entity->comment_body[$comment_lang][0]) &&
+            array_key_exists('value', $entity->comment_body[$comment_lang][0]) &&
+            is_string($entity->comment_body[$comment_lang][0]['value'])
+          ) {
+            $comment_body = $entity->comment_body[$comment_lang][0]['value'];
+          }
+          elseif (
+            array_key_exists('und', $entity->comment_body) &&
+            is_array($entity->comment_body['und']) &&
+            array_key_exists(0, $entity->comment_body['und']) &&
+            is_array($entity->comment_body['und'][0]) &&
+            array_key_exists('value', $entity->comment_body['und'][0]) &&
+            is_string($entity->comment_body['und'][0]['value'])
+          ) {
+            $comment_body = $entity->comment_body['und'][0]['value'];
+          }
+          else {
+            $comment_body = '';
+          }
+        }
         $ct_request->message = $comment_subject . " \n\n" . $comment_body;
 
         // Must be = node text + last 10 comments.
@@ -184,7 +208,32 @@ function cleantalk_entity_presave($entity, $type) {
           if ($result_node) {
             $node_lang = property_exists($result_node, 'language') ? $result_node->language : 'und';
             $a_example['title'] = property_exists($result_node, 'title') ? $result_node->title : '';
-            $a_example['body'] = (property_exists($result_node, 'body') && is_array($result_node->body)) ? $result_node->body[$node_lang][0]['value'] : '';
+
+            if (property_exists($result_node, 'body') && is_array($result_node->body)) {
+              if (
+                array_key_exists($node_lang, $result_node->body) &&
+                is_array($result_node->body[$node_lang]) &&
+                array_key_exists(0, $result_node->body[$node_lang]) &&
+                is_array($result_node->body[$node_lang][0]) &&
+                array_key_exists('value', $result_node->body[$node_lang][0]) &&
+                is_string($result_node->body[$node_lang][0]['value'])
+              ) {
+                $a_example['body'] = $result_node->body[$comment_lang][0]['value'];
+              }
+              elseif (
+                array_key_exists('und', $result_node->body) &&
+                is_array($result_node->body['und']) &&
+                array_key_exists(0, $result_node->body['und']) &&
+                is_array($result_node->body['und'][0]) &&
+                array_key_exists('value', $result_node->body['und'][0]) &&
+                is_string($result_node->body['und'][0]['value'])
+              ) {
+                $a_example['body'] = $result_node->body['und'][0]['value'];
+              }
+              else {
+                $a_example['body'] = '';
+              }
+            }
             $a_post_info['comment_type'] = 'comment';
           }
 
