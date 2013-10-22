@@ -519,7 +519,7 @@ function cleantalk_comment_view_alter(&$build) {
  */
 function cleantalk_menu() {
   $items['admin/config/cleantalk'] = array(
-    'title' => t('Antispam by CleanTalk'),
+    'title' => 'Antispam by CleanTalk',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('cleantalk_settings_form'),
     'access callback' => TRUE,

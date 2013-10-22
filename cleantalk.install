@@ -109,12 +109,6 @@ function cleantalk_schema() {
 }
 
 /**
- * Implements hook_install().
- */
-function cleantalk_install() {
-}
-
-/**
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
