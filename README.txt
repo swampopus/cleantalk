@@ -11,13 +11,13 @@ Key features.
 What CleanTalk is.
  CleanTalk is a SaaS spam protection service for Web-sites.
  CleanTalk uses protection methods which are invisible for site visitors.
- Using CleanTalk eliminates needs in CAPTCHA, questions and answers, and other methods
-  of protection, complicating the exchange of information on the site.
+ Using CleanTalk eliminates needs in CAPTCHA, questions and answers, and other
+  methods of protection, complicating the exchange of information on the site.
 
 How it works.
- Messages or registration requests are sent to the CleanTalk cloud, data is tested
-  with several methods on the cloud, then the site receives a response decision 
-  to approve or deny the message/registration.
+ Messages or registration requests are sent to the CleanTalk cloud, data is
+  tested with several methods on the cloud, then the site receives a response
+  decision to approve or deny the message/registration.
 
 
 -- REQUIREMENTS --
