@@ -20,10 +20,36 @@ How it works.
   to approve or deny the message/registration.
 
 
+-- REQUIREMENTS --
+
+* Libraries API module
+  http://drupal.org/project/libraries
+
+* CleanTalk PHP-antispam classes
+  https://github.com/CleanTalk/php-antispam
+
+
 -- INSTALLATION --
 
-* Get access key on http://CleanTalk.org.
-* Install CleanTalk module and put access key into it's settings.
+1. Download latest CleanTalk PHP-antispam classes from
+
+     https://github.com/CleanTalk/php-antispam
+
+   and extract the following files into a 'cleantalk' library directory:
+
+     sites/all/libraries/cleantalk/JSON.php
+     sites/all/libraries/cleantalk/cleantalk.class.php
+
+   It is recommended that you create your libraries directory at one of the
+   following locations:
+
+     sites/all/libraries/cleantalk
+     sites/<site>/libraries/cleantalk
+
+   Consult the Libraries API documentation for further information.
+
+2. Get access key on http://CleanTalk.org.
+3. Install CleanTalk module as usual and put access key into it's settings.
 
 
 -- TESTING --

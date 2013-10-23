@@ -99,7 +99,19 @@ function cleantalk_entity_presave($entity, $type) {
     ||
     $type == 'comment'
   ) {
-    require_once dirname(__FILE__) . '/cleantalk.class.php';
+    $path = _cleantalk_library_path_ok();
+    if (!$path) {
+      watchdog(
+        'cleantalk',
+        _cleantalk_library_missing_message_4runtime('CleanTalk PHP-antispam classes', 'sites/all/libraries/cleantalk'),
+        array(),
+        WATCHDOG_ERROR
+      );
+      return;
+    }
+    else {
+      require_once DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php';
+    }
 
     $ct_key = variable_get('ct_key', '');
     $ct_ws = _cleantalk_get_ws();
@@ -565,6 +577,22 @@ function cleantalk_comment_view_alter(&$build) {
 }
 
 /**
+ * Implements hook_registry_files_alter().
+ */
+function cleantalk_registry_files_alter(&$files, $modules) {
+  $library_path = libraries_get_path('cleantalk');
+  if (!$library_path) {
+    return;
+  }
+  foreach (array('cleantalk.class.php', 'JSON.php') as $filename) {
+    $files[$library_path . '/' . $filename] = array(
+      'module' => 'cleantalk',
+      'weight' => 0,
+    );
+  }
+}
+
+/**
  * Implements hook_menu().
  */
 function cleantalk_menu() {
@@ -681,7 +709,19 @@ function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru', $server_u
  * Cleantalk inner function - sends feedback to server.
  */
 function _cleantalk_send_feedback($request_id, $feedback) {
-  require_once dirname(__FILE__) . '/cleantalk.class.php';
+  $path = _cleantalk_library_path_ok();
+  if (!$path) {
+    watchdog(
+      'cleantalk',
+      _cleantalk_library_missing_message_4runtime('CleanTalk PHP-antispam classes', 'sites/all/libraries/cleantalk'),
+      array(),
+      WATCHDOG_ERROR
+    );
+    return;
+  }
+  else {
+    require_once DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php';
+  }
 
   $ct_key = variable_get('ct_key', '');
   $ct_ws = _cleantalk_get_ws();
@@ -699,4 +739,43 @@ function _cleantalk_send_feedback($request_id, $feedback) {
   $ct_request->feedback = $request_id . ':' . $feedback;
 
   $ct->sendFeedback($ct_request);
+}
+
+/**
+ * Cleantalk inner function - verify CleanTalk library.
+ * 
+ * @return string
+ *   CleanTalk library path when success or FALSE when error.
+ */
+function _cleantalk_library_path_ok() {
+  $library_path = libraries_get_path('cleantalk');
+  if (!$library_path) {
+    return FALSE;
+  }
+  foreach (array('cleantalk.class.php', 'JSON.php') as $filename) {
+    if (!file_exists(DRUPAL_ROOT . '/' . $library_path . '/' . $filename)) {
+      return FALSE;
+    }
+  }
+  return $library_path;
+}
+
+/**
+ * Cleantalk inner function - missing CleanTalk library message for runtime.
+ */
+function _cleantalk_library_missing_message_4runtime($title, $path) {
+  $t = get_t();
+  return $t('"Antispam by CleanTalk" module is NOT WORKING due to missing or broken CleanTalk library.') .
+    '<br />' .
+    $t(
+      'Please download <a target="__blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      array(
+        '@url' => 'https://github.com/CleanTalk/php-antispam',
+        '@path' => $path,
+        '@title' => $title,
+      )
+    ) .
+    '<br />' .
+    $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
+    '<br />';
 }

@@ -115,3 +115,69 @@ function cleantalk_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'cleantalk%'");
   cache_clear_all('variables', 'cache');
 }
+
+/**
+ * Implements hook_requirements().
+ */
+function cleantalk_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  drupal_load('module', 'libraries');
+  $path = libraries_get_path('cleantalk');
+  $title = 'CleanTalk PHP-antispam classes';
+  if (
+    !$path ||
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php') ||
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php')
+  ) {
+    // Since Libraries 2.x, $path is FALSE if the library does not exist.
+    $path = 'sites/all/libraries/cleantalk';
+    $requirements['cleantalk'] = array(
+      'title' => $t($title),
+      'value' => $t('Missing'),
+      'severity' => REQUIREMENT_ERROR,
+      'description' => $phase == 'runtime' ? _cleantalk_library_missing_message_4runtime($title, $path) : _cleantalk_library_missing_message_4install($title, $path),
+    );
+  }
+  else {
+    $requirements['cleantalk'] = array(
+      'title' => $t($title),
+      'value' => $t('Installed'),
+      'severity' => REQUIREMENT_OK,
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function cleantalk_enable() {
+  if (!_cleantalk_library_path_ok()) {
+    module_disable(array('cleantalk'));
+    drupal_set_message(_cleantalk_library_missing_message_4install('CleanTalk PHP-antispam classes', 'sites/all/libraries/cleantalk'), 'error');
+  }
+}
+
+/**
+ * Cleantalk inner function - missing CleanTalk library message for install.
+ */
+function _cleantalk_library_missing_message_4install($title, $path) {
+  $t = get_t();
+  return $t('"Antispam by CleanTalk" module is DISABLED due to missing or broken CleanTalk library.') .
+    '<br />' .
+    $t(
+      'Please download <a target="__blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      array(
+        '@url' => 'https://github.com/CleanTalk/php-antispam',
+        '@path' => $path,
+        '@title' => $title,
+      )
+    ) .
+    '<br />' .
+    $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
+    '<br />';
+}
