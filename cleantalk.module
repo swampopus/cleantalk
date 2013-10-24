@@ -16,39 +16,45 @@ define('CLEANTALK_MODULE_HOMEURL', 'http://www.drupal.org/project/cleantalk');
  * Implements hook_form_alter().
  */
 function cleantalk_form_alter(&$form, &$form_state, $form_id) {
+  // drupal_set_message($form_id);  // print form ID - great for gebug!
   if ($form_id == 'user_register_form'
     || $form_id == 'comment_node_page_form'
     || $form_id == 'comment_node_article_form'
   ) {
-    switch ($form_id) {
-      case 'user_register_form':
-        $dom_form_id = 'user-register-form';
-        $session_time_key = 'ct_submit_register_time';
-        break;
-
-      case 'comment_node_page_form':
-      case 'comment_node_article_form':
-        $dom_form_id = 'comment-form';
-        $session_time_key = 'ct_submit_comment_time';
-        break;
-
-      default:
-        $dom_form_id = FALSE;
+    if ($form_id == 'user_register_form') {
+      $dom_form_id = 'user-register-form';
+      $session_time_key = 'ct_submit_register_time';
     }
-    if ($dom_form_id != FALSE &&
-            // Only new rendered from.
-            (
-            array_key_exists('input', $form_state)
-            && is_array($form_state['input'])
-            && count($form_state['input']) == 0
-            ||
-            array_key_exists('input', $form_state)
-            && !is_array($form_state['input'])
-            ||
-            !array_key_exists('input', $form_state)
-            )
+    else {
+      $dom_form_id = 'comment-form';
+      $session_time_key = 'ct_submit_comment_time';
+    }
+    // To define form state exactly is not a trivial task in this CMS.
+    $flag_submitted = $form_state['submitted'];
+    $flag_executed = $form_state['executed'];
+    if (
+      array_key_exists('input', $form_state)
+      && is_array($form_state['input'])
+      && count($form_state['input']) == 0
+      ||
+      array_key_exists('input', $form_state)
+      && !is_array($form_state['input'])
+      ||
+      !array_key_exists('input', $form_state)
     ) {
-      // drupal_set_message($form_id);  // print form ID - great for gebug!
+      $flag_input = FALSE;
+    }
+    else {
+      $flag_input = TRUE;
+    }
+
+    if (
+      !$flag_input && !$flag_submitted && !$flag_executed
+      ||
+      $flag_input && $flag_submitted && $flag_executed
+    ) {
+      // All FALSE means new rendered comment form.
+      // All TRUE means comment form after Preview pressed!
       $_SESSION[$session_time_key] = time();
       $ct_check_value = md5(rand(0, 1000));
       $_SESSION['ct_check_key'] = $ct_check_value;
