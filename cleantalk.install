@@ -168,7 +168,7 @@ function cleantalk_enable() {
 function _cleantalk_library_missing_message_4install($title, $path) {
   $t = get_t();
   return $t('"Antispam by CleanTalk" module is DISABLED due to missing or broken CleanTalk library.') .
-    '<br />' .
+    ' <br />' .
     $t(
       'Please download <a target="__blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
       array(
@@ -177,7 +177,7 @@ function _cleantalk_library_missing_message_4install($title, $path) {
         '@title' => $title,
       )
     ) .
-    '<br />' .
+    ' <br />' .
     $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
     '<br />';
 }

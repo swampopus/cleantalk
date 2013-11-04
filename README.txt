@@ -19,6 +19,10 @@ How it works.
   tested with several methods on the cloud, then the site receives a response
   decision to approve or deny the message/registration.
 
+Note:
+ This module depends on both Libraries API module and CleanTalk PHP-antispam classes.
+ See REQUIREMENTS and INSTALLATION for details.
+
 
 -- REQUIREMENTS --
 
