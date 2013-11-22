@@ -122,11 +122,11 @@ function cleantalk_entity_presave($entity, $type) {
     $ct_key = variable_get('ct_key', '');
     $ct_ws = _cleantalk_get_ws();
 
-    if (!isset($_POST['ct_checkjs'])) {
-      $checkjs = NULL;
-    }
-    elseif (!isset($_SESSION['ct_check_key'])) {
+    if (!isset($_SESSION['ct_check_key'])) {
       $checkjs = 0;
+    }
+    elseif (!isset($_POST['ct_checkjs'])) {
+      $checkjs = NULL;
     }
     elseif ($_POST['ct_checkjs'] == $_SESSION['ct_check_key']) {
       $checkjs = 1;
