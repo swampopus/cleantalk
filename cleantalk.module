@@ -316,11 +316,11 @@ function cleantalk_entity_presave($entity, $type) {
       // Cleantalk error so we go default way (no action at all).
       // Just inform admin.
       $err_title = 'CleanTalk hook error';
-      if (empty($ct_result->inactive) && $ct_result->inactive == 1) {
-        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->comment);
+      if (!empty($ct_result->errstr) {
+        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->errstr);
       }
       else {
-        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->errstr);
+        $err_str = preg_replace('/^[^\*]*?\*\*\*|\*\*\*[^\*]*?$/iu', '', $ct_result->comment);
       }
 
       $send_flag = FALSE;
