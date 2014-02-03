@@ -112,7 +112,10 @@ function cleantalk_schema() {
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'cleantalk%'");
+  db_query("DELETE FROM {variable} WHERE name = 'ct_automod'");
+  db_query("DELETE FROM {variable} WHERE name = 'ct_comments'");
+  db_query("DELETE FROM {variable} WHERE name = 'ct_key'");
+  db_query("DELETE FROM {variable} WHERE name = 'ct_status'");
   cache_clear_all('variables', 'cache');
 }
 

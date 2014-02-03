@@ -3,4 +3,3 @@ description = Antispam service from <a target="__blank" href="http://cleantalk.o
 dependencies[] = libraries
 configure = admin/config/cleantalk
 core = 7.x
-files[] = cleantalk.admin.inc

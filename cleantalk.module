@@ -424,7 +424,7 @@ function cleantalk_entity_presave($entity, $type) {
           </body>
         </html>
               <?php
-              exit();
+              drupal_exit();
       }
     }
   }

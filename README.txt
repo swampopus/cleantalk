@@ -20,7 +20,8 @@ How it works.
   decision to approve or deny the message/registration.
 
 Note:
- This module depends on both Libraries API module and CleanTalk PHP-antispam classes.
+ This module depends on both Libraries API module and CleanTalk PHP-antispam
+  classes.
  See REQUIREMENTS and INSTALLATION for details.
 
 
