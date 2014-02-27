@@ -32,7 +32,7 @@ function cleantalk_form_alter(&$form, &$form_state, $form_id) {
     // To define form state exactly is not a trivial task in this CMS.
     $key2check = 'input';
     $flag_submitted = $form_state['submitted'];
-    $flag_submitted = $form_state['submitted'];
+    $flag_executed = $form_state['executed'];
     if (
       array_key_exists($key2check, $form_state)
       && is_array($form_state[$key2check])
