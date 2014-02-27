@@ -30,17 +30,18 @@ function cleantalk_form_alter(&$form, &$form_state, $form_id) {
       $session_time_key = 'ct_submit_comment_time';
     }
     // To define form state exactly is not a trivial task in this CMS.
+    $key2check = 'input';
     $flag_submitted = $form_state['submitted'];
-    $flag_executed = $form_state['executed'];
+    $flag_submitted = $form_state['submitted'];
     if (
-      array_key_exists('input', $form_state)
-      && is_array($form_state['input'])
-      && count($form_state['input']) == 0
+      array_key_exists($key2check, $form_state)
+      && is_array($form_state[$key2check])
+      && count($form_state[$key2check]) == 0
       ||
-      array_key_exists('input', $form_state)
-      && !is_array($form_state['input'])
+      array_key_exists($key2check, $form_state)
+      && !is_array($form_state[$key2check])
       ||
-      !array_key_exists('input', $form_state)
+      !array_key_exists($key2check, $form_state)
     ) {
       $flag_input = FALSE;
     }
