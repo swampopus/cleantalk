@@ -85,11 +85,6 @@ function cleantalk_entity_presave($entity, $type) {
     && property_exists($entity, 'is_anonymous') && $entity->is_anonymous == 0
     && property_exists($entity, 'uid') && $entity->uid > 0
   ) {
-    // $result = db_query(
-    // 'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
-    // array(':uid' => $entity->uid)
-    // );
-    // $count = $result->fetchObject()->count;
     $result = db_select('comment', 'c')
       ->condition('uid', $entity->uid, '=')
       ->condition('status', 1, '=')
@@ -273,19 +268,6 @@ function cleantalk_entity_presave($entity, $type) {
           }
 
           // Find last 10 comments.
-          // $result_10 = db_query(
-          // 'SELECT comment.subject AS subject,field_data_comment_body.
-          // comment_body_value AS value FROM {comment} LEFT JOIN
-          // {field_data_comment_body} ON comment.cid=field_data_comment_body.
-          // entity_id WHERE comment.nid=:nid AND comment.status=1 order by
-          // changed desc limit 10',
-          // array(':nid' => $nid)
-          // );
-          // $a_example['comments'] = '';
-          // foreach ($result_10 as $record) {
-          // $a_example['comments'] .= $record->subject . " \n\n" .
-          // $record->value . " \n\n";
-          // }
           $query = db_select('comment', 'c')
           ->fields('c', array('subject'))
           ->fields('f', array('comment_body_value'))
@@ -357,11 +339,6 @@ function cleantalk_entity_presave($entity, $type) {
       $send_flag = FALSE;
       $insert_flag = FALSE;
 
-      // $result = db_query(
-      // 'SELECT ct_value FROM {cleantalk_timelabels}
-      // WHERE ct_key=:timelabels_key',
-      // array(':timelabels_key' => $timelabels_key)
-      // );
       $result = db_select('cleantalk_timelabels', 'c')
       ->fields('c', array('ct_value'))
       ->condition('ct_key', $timelabels_key, '=')
@@ -521,11 +498,6 @@ function cleantalk_user_insert(&$edit, $account, $category) {
  * Implements hook_comment_publish().
  */
 function cleantalk_comment_publish($comment) {
-  // $result = db_query(
-  // 'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids}
-  // WHERE cid=:cid LIMIT 1',
-  // array(':cid' => $comment->cid)
-  // );
   $result = db_select('cleantalk_cids', 'c')
   ->fields('c', array('ct_request_id', 'ct_result_comment'))
   ->condition('cid', $comment->cid, '=')
@@ -547,11 +519,6 @@ function cleantalk_comment_publish($comment) {
  * Implements hook_comment_delete().
  */
 function cleantalk_comment_delete($comment) {
-  // $result = db_query(
-  // 'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids}
-  // WHERE cid=:cid LIMIT 1',
-  // array(':cid' => $comment->cid)
-  // );
   $result = db_select('cleantalk_cids', 'c')
   ->fields('c', array('ct_request_id', 'ct_result_comment'))
   ->condition('cid', $comment->cid, '=')
@@ -573,11 +540,6 @@ function cleantalk_comment_delete($comment) {
  * Implements hook_user_delete().
  */
 function cleantalk_user_delete($account) {
-  // $result = db_query(
-  // 'SELECT ct_request_id,ct_result_comment FROM {cleantalk_uids}
-  // WHERE uid=:uid LIMIT 1',
-  // array(':uid' => $account->uid)
-  // );
   $result = db_select('cleantalk_uids', 'c')
   ->fields('c', array('ct_request_id', 'ct_result_comment'))
   ->condition('uid', $account->uid, '=')
@@ -625,11 +587,6 @@ function cleantalk_comment_view_alter(&$build) {
     }
 
     if ($show_ct_comment) {
-      // $result = db_query(
-      // 'SELECT ct_request_id,ct_result_comment FROM {cleantalk_cids}
-      // WHERE cid=:cid LIMIT 1',
-      // array(':cid' => $build['#comment']->cid)
-      // );
       $result = db_select('cleantalk_cids', 'c')
       ->fields('c', array('ct_request_id', 'ct_result_comment'))
       ->condition('cid', $build['#comment']->cid, '=')
@@ -679,8 +636,6 @@ function cleantalk_menu() {
  * Cleantalk inner function - gets working server.
  */
 function _cleantalk_get_ws() {
-  // $result = db_query('SELECT work_url,server_url,server_ttl,server_changed
-  // FROM {cleantalk_server} LIMIT 1');
   $result = db_select('cleantalk_server', 'c')
   ->fields('c', array('work_url', 'server_url', 'server_ttl', 'server_changed'))
   ->range(0, 1)
@@ -708,9 +663,6 @@ function _cleantalk_get_ws() {
  * Cleantalk inner function - sets working server.
  */
 function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru', $server_url = 'http://moderate.cleantalk.ru', $server_ttl = 0, $server_changed = 0) {
-  // $result = db_query('SELECT count(*) AS count FROM {cleantalk_server}');
-  // $count = $result->fetchObject()->count;
-  // if ($count > 0) {
   $result = db_select('cleantalk_server', 'c')
   ->countQuery()
   ->execute()
