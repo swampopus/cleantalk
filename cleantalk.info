@@ -1,5 +1,5 @@
 name = Antispam by CleanTalk
-description = Antispam service from <a target="__blank" href="http://cleantalk.org">CleanTalk</a> to protect your site
+description = Antispam service from <a target="_blank" href="http://cleantalk.org">CleanTalk</a> to protect your site
 dependencies[] = libraries
 configure = admin/config/cleantalk
 core = 7.x

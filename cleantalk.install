@@ -112,11 +112,9 @@ function cleantalk_schema() {
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name = 'ct_automod'");
-  db_query("DELETE FROM {variable} WHERE name = 'ct_comments'");
-  db_query("DELETE FROM {variable} WHERE name = 'ct_key'");
-  db_query("DELETE FROM {variable} WHERE name = 'ct_status'");
-  cache_clear_all('variables', 'cache');
+  variable_del('cleantalk_automod');
+  variable_del('cleantalk_comments');
+  variable_del('cleantalk_authkey');
 }
 
 /**
@@ -173,7 +171,7 @@ function _cleantalk_library_missing_message_4install($title, $path) {
   return $t('"Antispam by CleanTalk" module is DISABLED due to missing or broken CleanTalk library.') .
     ' <br />' .
     $t(
-      'Please download <a target="__blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      'Please download <a target="_blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
       array(
         '@url' => 'https://github.com/CleanTalk/php-antispam',
         '@path' => $path,

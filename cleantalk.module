@@ -6,71 +6,24 @@
  */
 
 /**
- * CleanTalk Drupal and Module versions.
+ * Implements hook_form_user_register_form_alter().
  */
-define('CLEANTALK_DRUPAL_VERSION', '7');
-define('CLEANTALK_MODULE_VERSION', '1.0');
-define('CLEANTALK_MODULE_HOMEURL', 'http://www.drupal.org/project/cleantalk');
+function cleantalk_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
+}
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_comment_node_page_form_alter().
  */
-function cleantalk_form_alter(&$form, &$form_state, $form_id) {
-  // drupal_set_message($form_id);  // print form ID - great for gebug!
-  if ($form_id == 'user_register_form'
-    || $form_id == 'comment_node_page_form'
-    || $form_id == 'comment_node_article_form'
-  ) {
-    if ($form_id == 'user_register_form') {
-      $dom_form_id = 'user-register-form';
-      $session_time_key = 'ct_submit_register_time';
-    }
-    else {
-      $dom_form_id = 'comment-form';
-      $session_time_key = 'ct_submit_comment_time';
-    }
-    // To define form state exactly is not a trivial task in this CMS.
-    $key2check = 'input';
-    $flag_submitted = $form_state['submitted'];
-    $flag_executed = $form_state['executed'];
-    if (
-      array_key_exists($key2check, $form_state)
-      && is_array($form_state[$key2check])
-      && count($form_state[$key2check]) == 0
-      ||
-      array_key_exists($key2check, $form_state)
-      && !is_array($form_state[$key2check])
-      ||
-      !array_key_exists($key2check, $form_state)
-    ) {
-      $flag_input = FALSE;
-    }
-    else {
-      $flag_input = TRUE;
-    }
+function cleantalk_form_comment_node_page_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
+}
 
-    if (
-      !$flag_input && !$flag_submitted && !$flag_executed
-      ||
-      $flag_input && $flag_submitted && $flag_executed
-    ) {
-      // All FALSE means new rendered comment form.
-      // All TRUE means comment form after Preview pressed!
-      $_SESSION[$session_time_key] = time();
-      $ct_check_value = md5(rand(0, 1000));
-      $_SESSION['ct_check_key'] = $ct_check_value;
-
-      $form['ct_checkjs'] = array(
-        '#type' => 'hidden',
-        '#value' => 0,
-        '#suffix' => "<script type=\"text/javascript\">\n" .
-        "setTimeout(\"document.getElementById('" . $dom_form_id .
-        "').ct_checkjs.value = document.getElementById('" . $dom_form_id .
-        "').ct_checkjs.value.replace('0', '" . $ct_check_value .
-        "');\",1000);\n</script>\n",
-      );
-    }
-  }
+/**
+ * Implements hook_form_comment_node_article_form_alter().
+ */
+function cleantalk_form_comment_node_article_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
 }
 
 /**
@@ -80,7 +33,7 @@ function cleantalk_entity_presave($entity, $type) {
   if ($type != 'comment' && $type != 'user') {
     return;
   }
-  // Don't check comment from reged user with >= 'ct_comments' approved msgs.
+  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
   if ($type == 'comment'
     && property_exists($entity, 'is_anonymous') && $entity->is_anonymous == 0
     && property_exists($entity, 'uid') && $entity->uid > 0
@@ -97,10 +50,10 @@ function cleantalk_entity_presave($entity, $type) {
     else {
       $count = 0;
     }
-    $ct_comments = variable_get('ct_comments', 3);
+    $ct_comments = variable_get('cleantalk_comments', 3);
     if ($ct_comments < 1) {
       $ct_comments = 1;
-      variable_set('ct_comments', 1);
+      variable_set('cleantalk_comments', 1);
     }
     if ($count >= $ct_comments) {
       return;
@@ -127,7 +80,7 @@ function cleantalk_entity_presave($entity, $type) {
       require_once DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php';
     }
 
-    $ct_key = variable_get('ct_key', '');
+    $ct_authkey = variable_get('cleantalk_authkey', '');
     $ct_ws = _cleantalk_get_ws();
 
     if (!isset($_SESSION['ct_check_key'])) {
@@ -173,7 +126,7 @@ function cleantalk_entity_presave($entity, $type) {
     );
 
     $ct_request = new CleantalkRequest();
-    $ct_request->auth_key = $ct_key;
+    $ct_request->auth_key = $ct_authkey;
     $ct_request->agent = 'drupal-101';
     $ct_request->response_lang = 'en';
     $ct_request->js_on = $checkjs;
@@ -268,18 +221,13 @@ function cleantalk_entity_presave($entity, $type) {
           }
 
           // Find last 10 comments.
-          $query = db_select('comment', 'c')
-          ->fields('c', array('subject'))
-          ->fields('f', array('comment_body_value'))
-          ->condition('c.nid', $nid, '=')
-          ->condition('c.status', 1, '=')
-          ->orderBy('c.changed', 'DESC')
-          ->range(0, 10);
-          $query->leftjoin('field_data_comment_body', 'f', 'c.cid=f.entity_id');
-          $result_10 = $query->execute();
+          $result_10 = db_query(
+                  'SELECT comment.subject AS subject,field_data_comment_body.comment_body_value AS value FROM {comment} LEFT JOIN {field_data_comment_body} ON comment.cid=field_data_comment_body.entity_id WHERE comment.nid=:nid AND comment.status=1 order by changed desc limit 10',
+                  array(':nid' => $nid)
+          );
           $a_example['comments'] = '';
           foreach ($result_10 as $record) {
-            $a_example['comments'] .= $record->subject . " \n\n" . $record->comment_body_value . " \n\n";
+            $a_example['comments'] .= $record->subject . " \n\n" . $record->value . " \n\n";
           }
 
           // JSON format.
@@ -458,7 +406,7 @@ function cleantalk_comment_insert($comment) {
     ))
     ->execute();
 
-    $ct_automod = variable_get('ct_automod', 1);
+    $ct_automod = variable_get('cleantalk_automod', 1);
     if ($ct_automod == 1) {
       // Automoderation enabled - change comment status.
       // $GLOBALS['ct_result_comment'] means bad comment, set status = 0.
@@ -561,42 +509,16 @@ function cleantalk_user_delete($account) {
  * Implements hook_comment_view_alter().
  */
 function cleantalk_comment_view_alter(&$build) {
-  global $user;
-  // Remember - 'administrator' role name can be changed from admin panel!
-  // But permission name cannot.
-  // So we cannot find 'administrator' role only, we must use permission name.
-  if (user_is_logged_in()) {
-    // Falg to show CleanTalk comment in site comment body.
-    $show_ct_comment = FALSE;
-
-    // First check an usual 'administrator' role name - it's OK in 99%
-    if (in_array('administrator', $user->roles)) {
-      $show_ct_comment = TRUE;
-    }
-
-    // Next check 'administer comments' permission.
-    if (!$show_ct_comment) {
-      // Get all roles who have 'administer comments' permission.
-      $roles = user_roles(TRUE, 'administer comments');
-      foreach ($roles as $role) {
-        if (in_array($role, $user->roles)) {
-          $show_ct_comment = TRUE;
-          break;
-        }
-      }
-    }
-
-    if ($show_ct_comment) {
-      $result = db_select('cleantalk_cids', 'c')
+  if (user_access('administer comments')) {
+    $result = db_select('cleantalk_cids', 'c')
       ->fields('c', array('ct_request_id', 'ct_result_comment'))
       ->condition('cid', $build['#comment']->cid, '=')
       ->range(0, 1)
       ->execute();
-      if ($result->rowCount() > 0) {
-        $ct_result = $result->fetchObject();
-        if (!empty($ct_result->ct_result_comment)) {
-          $build['comment_body'][0]['#markup'] .= '<hr>' . $ct_result->ct_result_comment;
-        }
+    if ($result->rowCount() > 0) {
+      $ct_result = $result->fetchObject();
+      if (!empty($ct_result->ct_result_comment)) {
+        $build['comment_body'][0]['#markup'] .= '<hr>' . $ct_result->ct_result_comment;
       }
     }
   }
@@ -707,7 +629,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
     require_once DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php';
   }
 
-  $ct_key = variable_get('ct_key', '');
+  $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_ws = _cleantalk_get_ws();
 
   $ct = new Cleantalk();
@@ -717,7 +639,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
   $ct->server_changed = $ct_ws['server_changed'];
 
   $ct_request = new CleantalkRequest();
-  $ct_request->auth_key = $ct_key;
+  $ct_request->auth_key = $ct_authkey;
   $ct_request->agent = 'drupal-101';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
@@ -752,7 +674,7 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
   return $t('"Antispam by CleanTalk" module is NOT WORKING due to missing or broken CleanTalk library.') .
     ' <br />' .
     $t(
-      'Please download <a target="__blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      'Please download <a target="_blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
       array(
         '@url' => 'https://github.com/CleanTalk/php-antispam',
         '@path' => $path,
@@ -762,4 +684,64 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
     ' <br />' .
     $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
     '<br />';
+}
+
+/**
+ * Cleantalk inner function - alters needed form.
+ */
+function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_register_form'
+    || $form_id == 'comment_node_page_form'
+    || $form_id == 'comment_node_article_form'
+  ) {
+    if ($form_id == 'user_register_form') {
+      $dom_form_id = 'user-register-form';
+      $session_time_key = 'ct_submit_register_time';
+    }
+    else {
+      $dom_form_id = 'comment-form';
+      $session_time_key = 'ct_submit_comment_time';
+    }
+    // To define form state exactly is not a trivial task in this CMS.
+    $key2check = 'input';
+    $flag_submitted = $form_state['submitted'];
+    $flag_executed = $form_state['executed'];
+    if (
+      array_key_exists($key2check, $form_state)
+      && is_array($form_state[$key2check])
+      && count($form_state[$key2check]) == 0
+      ||
+      array_key_exists($key2check, $form_state)
+      && !is_array($form_state[$key2check])
+      ||
+      !array_key_exists($key2check, $form_state)
+    ) {
+      $flag_input = FALSE;
+    }
+    else {
+      $flag_input = TRUE;
+    }
+
+    if (
+      !$flag_input && !$flag_submitted && !$flag_executed
+      ||
+      $flag_input && $flag_submitted && $flag_executed
+    ) {
+      // All FALSE means new rendered comment form.
+      // All TRUE means comment form after Preview pressed!
+      $_SESSION[$session_time_key] = time();
+      $ct_check_value = md5(rand(0, 1000));
+      $_SESSION['ct_check_key'] = $ct_check_value;
+
+      $form['ct_checkjs'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+        '#suffix' => "<script type=\"text/javascript\">\n" .
+        "setTimeout(\"document.getElementById('" . $dom_form_id .
+        "').ct_checkjs.value = document.getElementById('" . $dom_form_id .
+        "').ct_checkjs.value.replace('0', '" . $ct_check_value .
+        "');\",1000);\n</script>\n",
+      );
+    }
+  }
 }

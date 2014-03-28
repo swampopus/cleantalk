@@ -1,6 +1,6 @@
 -- SUMMARY --
 
-Antispam module by CleanTalk to protect Drupal sites from spam bot registraton
+Antispam module by CleanTalk to protect Drupal sites from spam bot registration
  and spam comments publication.
 
 Key features.
@@ -54,13 +54,13 @@ Note:
    Consult the Libraries API documentation for further information.
 
 2. Get access key on http://CleanTalk.org.
-3. Install CleanTalk module as usual and put access key into it's settings.
+3. Install CleanTalk module as usual and put access key into its settings.
 
 
 -- TESTING --
 
 * Try to register account with "stop_email@example.com" as email address.
-* Try to put comment with "stop_word" in it's body.
+* Try to put comment with "stop_word" in its body.
 
 
 -- CONTACT --
