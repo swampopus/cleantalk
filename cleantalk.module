@@ -688,11 +688,9 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'user_register_form') {
-    $dom_form_id = 'user-register-form';
     $session_time_key = 'ct_submit_register_time';
   }
   else {
-    $dom_form_id = 'comment-form';
     $session_time_key = 'ct_submit_comment_time';
   }
   // To define form state exactly is not a trivial task in this CMS.
