@@ -6,21 +6,21 @@
  */
 
 /**
- * Implements hook_form_user_register_form_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
 function cleantalk_form_user_register_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
 }
 
 /**
- * Implements hook_form_comment_node_page_form_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
 function cleantalk_form_comment_node_page_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
 }
 
 /**
- * Implements hook_form_comment_node_article_form_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
 function cleantalk_form_comment_node_article_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
@@ -83,13 +83,10 @@ function cleantalk_entity_presave($entity, $type) {
     $ct_authkey = variable_get('cleantalk_authkey', '');
     $ct_ws = _cleantalk_get_ws();
 
-    if (!isset($_SESSION['ct_check_key'])) {
-      $checkjs = 0;
-    }
-    elseif (!isset($_POST['ct_checkjs'])) {
+    if (!isset($_POST['ct_checkjs'])) {
       $checkjs = NULL;
     }
-    elseif ($_POST['ct_checkjs'] == $_SESSION['ct_check_key']) {
+    elseif ($_POST['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
       $checkjs = 1;
     }
     else {
@@ -690,58 +687,67 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
  * Cleantalk inner function - alters needed form.
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'user_register_form'
-    || $form_id == 'comment_node_page_form'
-    || $form_id == 'comment_node_article_form'
-  ) {
-    if ($form_id == 'user_register_form') {
-      $dom_form_id = 'user-register-form';
-      $session_time_key = 'ct_submit_register_time';
-    }
-    else {
-      $dom_form_id = 'comment-form';
-      $session_time_key = 'ct_submit_comment_time';
-    }
-    // To define form state exactly is not a trivial task in this CMS.
-    $key2check = 'input';
-    $flag_submitted = $form_state['submitted'];
-    $flag_executed = $form_state['executed'];
-    if (
-      array_key_exists($key2check, $form_state)
-      && is_array($form_state[$key2check])
-      && count($form_state[$key2check]) == 0
-      ||
-      array_key_exists($key2check, $form_state)
-      && !is_array($form_state[$key2check])
-      ||
-      !array_key_exists($key2check, $form_state)
-    ) {
-      $flag_input = FALSE;
-    }
-    else {
-      $flag_input = TRUE;
-    }
-
-    if (
-      !$flag_input && !$flag_submitted && !$flag_executed
-      ||
-      $flag_input && $flag_submitted && $flag_executed
-    ) {
-      // All FALSE means new rendered comment form.
-      // All TRUE means comment form after Preview pressed!
-      $_SESSION[$session_time_key] = time();
-      $ct_check_value = md5(rand(0, 1000));
-      $_SESSION['ct_check_key'] = $ct_check_value;
-
-      $form['ct_checkjs'] = array(
-        '#type' => 'hidden',
-        '#value' => 0,
-        '#suffix' => "<script type=\"text/javascript\">\n" .
-        "setTimeout(\"document.getElementById('" . $dom_form_id .
-        "').ct_checkjs.value = document.getElementById('" . $dom_form_id .
-        "').ct_checkjs.value.replace('0', '" . $ct_check_value .
-        "');\",1000);\n</script>\n",
-      );
-    }
+  if ($form_id == 'user_register_form') {
+    $dom_form_id = 'user-register-form';
+    $session_time_key = 'ct_submit_register_time';
   }
+  else {
+    $dom_form_id = 'comment-form';
+    $session_time_key = 'ct_submit_comment_time';
+  }
+  // To define form state exactly is not a trivial task in this CMS.
+  $key2check = 'input';
+  $flag_submitted = $form_state['submitted'];
+  $flag_executed = $form_state['executed'];
+  if (
+    array_key_exists($key2check, $form_state)
+    && is_array($form_state[$key2check])
+    && count($form_state[$key2check]) == 0
+    ||
+    array_key_exists($key2check, $form_state)
+    && !is_array($form_state[$key2check])
+    ||
+    !array_key_exists($key2check, $form_state)
+  ) {
+    $flag_input = FALSE;
+  }
+  else {
+    $flag_input = TRUE;
+  }
+
+  if (
+    !$flag_input && !$flag_submitted && !$flag_executed
+    ||
+    $flag_input && $flag_submitted && $flag_executed
+  ) {
+    // All FALSE means new rendered comment form.
+    // All TRUE means comment form after Preview pressed!
+    $_SESSION[$session_time_key] = time();
+
+    $ct_check_def = '0';
+    $ct_check_value = _cleantalk_get_checkjs_value();
+    $field_name = 'ct_checkjs';
+    $field_id = $field_name . '_' . md5(rand(0, 1000));
+    $html_template = "\n" .
+      '<input type="hidden" id="%s" name="%s" value="%s" />' . "\n" .
+      '<script type="text/javascript">' . "\n" .
+      '// <![CDATA[' . "\n" .
+      'setTimeout("document.getElementById(\"%s\").value = document.getElementById(\"%s\").value.replace(/^%s$/, \"%s\");",1000);' . "\n" .
+      '// ]]>' . "\n" .
+      '</script>' . "\n\n";
+    $ct_addon_body = sprintf($html_template, $field_id, $field_name, $ct_check_def, $field_id, $field_id, $ct_check_def, $ct_check_value);
+
+    $form['ct_addon'] = array(
+      '#type' => 'hidden',
+      '#value' => 0,
+      '#suffix' => $ct_addon_body,
+    );
+  }
+}
+
+/**
+ * Cleantalk inner function - gets JavaScript checking value.
+ */
+function _cleantalk_get_checkjs_value() {
+  return md5(variable_get('cleantalk_authkey', '') . '+' . variable_get('site_mail', ini_get('sendmail_from')));
 }

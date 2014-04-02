@@ -9,15 +9,10 @@
  * Cleantalk settings form.
  */
 function cleantalk_settings_form($form, &$form_state) {
-  $ct_comments_min = 1;
   $ct_comments_default = 3;
 
-  $ct_authkey = variable_get('cleantalk_authkey', 'enter key');
+  $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_comments = variable_get('cleantalk_comments', $ct_comments_default);
-  if ($ct_comments < $ct_comments_min) {
-    $ct_comments = $ct_comments_min;
-    variable_set('cleantalk_comments', $ct_comments_min);
-  }
   $ct_automod = variable_get('cleantalk_automod', 1);
 
   $form['cleantalk_authkey'] = array(
@@ -25,7 +20,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#title' => t('Access key'),
     '#size' => 10,
     '#maxlength' => 10,
-    '#default_value' => $ct_authkey,
+    '#default_value' => $ct_authkey ? $ct_authkey : 'enter key',
     '#description' => t(
       'Click <a target="_blank" href="!ct_link">here</a> to get access key.',
       array(
