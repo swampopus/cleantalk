@@ -219,7 +219,7 @@ function cleantalk_entity_presave($entity, $type) {
 
           // Find last 10 comments.
           $result_10 = db_query(
-                  'SELECT comment.subject AS subject,field_data_comment_body.comment_body_value AS value FROM {comment} LEFT JOIN {field_data_comment_body} ON comment.cid=field_data_comment_body.entity_id WHERE comment.nid=:nid AND comment.status=1 order by changed desc limit 10',
+                  'SELECT {comment}.subject AS subject,{field_data_comment_body}.comment_body_value AS value FROM {comment} LEFT JOIN {field_data_comment_body} ON {comment}.cid={field_data_comment_body}.entity_id WHERE {comment}.nid=:nid AND {comment}.status=1 order by changed desc limit 10',
                   array(':nid' => $nid)
           );
           $a_example['comments'] = '';
