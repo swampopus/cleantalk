@@ -13,16 +13,9 @@ function cleantalk_form_user_register_form_alter(&$form, &$form_state, $form_id)
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_BASE_FORM_ID_alter().
  */
-function cleantalk_form_comment_node_page_form_alter(&$form, &$form_state, $form_id) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function cleantalk_form_comment_node_article_form_alter(&$form, &$form_state, $form_id) {
+function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
 }
 
