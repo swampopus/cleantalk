@@ -639,7 +639,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
 /**
  * Cleantalk inner function - verify CleanTalk library.
- * 
+ *
  * @return string
  *   CleanTalk library path when success or FALSE when error.
  */

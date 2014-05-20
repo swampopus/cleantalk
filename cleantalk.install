@@ -10,6 +10,7 @@
  */
 function cleantalk_schema() {
   $schema['cleantalk_timelabels'] = array(
+    'description' => 'Timelabels for admin notification sending.',
     'fields' => array(
       'ct_key' => array(
         'type' => 'varchar',
@@ -28,6 +29,7 @@ function cleantalk_schema() {
     'primary key' => array('ct_key'),
   );
   $schema['cleantalk_cids'] = array(
+    'description' => 'Comment checking results - CIDs and server responces.',
     'fields' => array(
       'cid' => array(
         'type' => 'int',
@@ -52,6 +54,7 @@ function cleantalk_schema() {
     'primary key' => array('cid'),
   );
   $schema['cleantalk_uids'] = array(
+    'description' => 'New user checking results - UIDs and server responces.',
     'fields' => array(
       'uid' => array(
         'type' => 'int',
@@ -76,6 +79,7 @@ function cleantalk_schema() {
     'primary key' => array('uid'),
   );
   $schema['cleantalk_server'] = array(
+    'description' => 'Current CleanTalk working server.',
     'fields' => array(
       'work_url' => array(
         'type' => 'varchar',
