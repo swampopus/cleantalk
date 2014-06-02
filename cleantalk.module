@@ -581,7 +581,7 @@ function _cleantalk_check_spam($spam_check) {
 
       $to = variable_get('site_mail', ini_get('sendmail_from'));
       if (!empty($to)) {
-        $message = drupal_mail($my_module,
+        drupal_mail($my_module,
           $timelabels_key,
           $to,
           language_default(),
