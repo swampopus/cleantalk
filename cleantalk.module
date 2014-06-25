@@ -88,10 +88,7 @@ function cleantalk_validate_comment(&$form, &$form_state) {
     }
     // Find last 10 comments.
     $result_10 = db_query(
-      'SELECT comment.subject AS subject,fdcb.comment_body_value AS value ' .
-      'FROM {comment} AS comment ' .
-      'LEFT JOIN {field_data_comment_body} AS fdcb ON comment.cid=fdcb.entity_id ' .
-      'WHERE comment.nid=:nid AND comment.status=1 ORDER BY changed DESC LIMIT 10',
+      'SELECT c.subject AS subject,f.comment_body_value AS value FROM {comment} AS c LEFT JOIN {field_data_comment_body} AS f ON c.cid=f.entity_id WHERE c.nid=:nid AND c.status=1 ORDER BY changed DESC LIMIT 10',
       array(':nid' => $nid)
     );
     foreach ($result_10 as $record) {
