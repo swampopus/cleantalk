@@ -25,9 +25,12 @@ function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
 function cleantalk_validate_register(&$form, &$form_state) {
   $spam_check = array();
   $spam_check['type'] = 'register';
-  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-  $spam_check['timezone'] = !empty($form_state['values']['timezone']) ? $form_state['values']['timezone'] : '';
+  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ?
+    $form_state['values']['mail'] : '';
+  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ?
+    $form_state['values']['name'] : '';
+  $spam_check['timezone'] = !empty($form_state['values']['timezone']) ?
+    $form_state['values']['timezone'] : '';
 
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
@@ -44,58 +47,66 @@ function cleantalk_validate_register(&$form, &$form_state) {
  * Cleantalk comment validation function.
  */
 function cleantalk_validate_comment(&$form, &$form_state) {
-  // Don't check reged user with >= 3 approved msgs.
-  if ($form_state['values']['is_anonymous'] == 0) {
-    $result = db_select('comment', 'c')
-      ->condition('uid', $form_state['values']['uid'], '=')
-      ->condition('status', 1, '=')
-      ->countQuery()
-      ->execute()
-      ->fetchObject();
-    if (property_exists($result, 'expression')) {
-      $count = intval($result->expression);
-    }
-    else {
-      $count = 0;
-    }
-    if ($count >= 3) {
+  global $user;
+  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
+  if ($user->uid > 0) {
+
+    $result = db_query(
+      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+      array(':uid' => $user->uid)
+    );
+    $count = intval($result->fetchObject()->count);
+
+    $ct_comments = variable_get('cleantalk_comments', 3);
+    if ($count >= $ct_comments) {
       return;
     }
   }
 
-  $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+  $comment_lang = array_key_exists('language', $form_state['values']) ?
+    $form_state['values']['language'] : LANGUAGE_NONE;
   $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
 
   $spam_check = array();
   $spam_check['type'] = 'comment';
-  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-  $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
-  $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ?
+    $form_state['values']['mail'] : '';
+  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ?
+    $form_state['values']['name'] : '';
+  $spam_check['message_title'] = !empty($form_state['values']['subject']) ?
+    $form_state['values']['subject'] : '';
+  $spam_check['message_body'] = isset($comment_body['value']) ?
+    $comment_body['value'] : '';
   $spam_check['example_title'] = '';
   $spam_check['example_body'] = '';
   $spam_check['example_comments'] = '';
 
   // Node id of commented entity - page or article.
-  $nid = array_key_exists('nid', $form_state['values']) ? $form_state['values']['nid'] : NULL;
+  $nid = array_key_exists('nid', $form_state['values']) ?
+    $form_state['values']['nid'] : NULL;
   if ($nid != NULL) {
     // Find node.
     $result_node = node_load($nid);
     if ($result_node) {
-      $node_lang = property_exists($result_node, 'language') ? $result_node->language : LANGUAGE_NONE;
-      $spam_check['example_title'] = property_exists($result_node, 'title') ? $result_node->title : '';
-
-      if (property_exists($result_node, 'body') && is_array($result_node->body)) {
-        $spam_check['example_body'] = isset($result_node->body[$node_lang][0]['value']) ? $result_node->body[$node_lang][0]['value'] : '';
+      $spam_check['example_title'] = property_exists($result_node, 'title') ?
+        strip_tags($result_node->title) : '';
+      $node_field = field_get_items('node', $result_node, 'body');
+      foreach ($node_field as $nf) {
+        $field_value = field_view_value('node', $result_node, 'body', $nf);
+        $spam_check['example_body'] .= strip_tags(render($field_value));
       }
     }
     // Find last 10 comments.
     $result_10 = db_query(
-      'SELECT {comment}.subject AS subject,{field_data_comment_body}.comment_body_value AS value FROM {comment} LEFT JOIN {field_data_comment_body} ON {comment}.cid={field_data_comment_body}.entity_id WHERE {comment}.nid=:nid AND {comment}.status=1 order by changed desc limit 10',
+      'SELECT c.subject AS subject,f.comment_body_value AS value ' .
+      'FROM {comment} AS c ' .
+      'LEFT JOIN {field_data_comment_body} AS f ON c.cid=f.entity_id ' .
+      'WHERE c.nid=:nid AND c.status=1 ORDER BY changed DESC LIMIT 10',
       array(':nid' => $nid)
     );
     foreach ($result_10 as $record) {
-      $spam_check['example_comments'] .= $record->subject . " \n\n" . $record->value . " \n\n";
+      $spam_check['example_comments'] .= strip_tags($record->subject) . " \n\n" .
+        strip_tags($record->value) . " \n\n";
     }
   }
 
@@ -115,15 +126,17 @@ function cleantalk_validate_comment(&$form, &$form_state) {
  * Implements hook_comment_presave().
  */
 function cleantalk_comment_presave($comment) {
-  if (isset($GLOBALS['ct_request_id'])) {
+  $ct_result = _cleantalk_ct_result();
+  if (!empty($ct_result['ct_request_id'])) {
     $ct_automod = variable_get('cleantalk_automod', 1);
     if ($ct_automod == 1) {
       // Automoderation enabled - change comment status.
-      // $GLOBALS['ct_result_comment'] means bad comment, set status = 0.
-      // No $GLOBALS['ct_result_comment'] means good comment, set status = 1.
-      $comment->status = isset($GLOBALS['ct_result_comment']) ? COMMENT_NOT_PUBLISHED : COMMENT_PUBLISHED;
+      // Not empty 'ct_result_comment' means bad comment, set status = 0.
+      // Empty 'ct_result_comment' means good comment, set status = 1.
+      $comment->status = empty($ct_result['ct_result_comment']) ?
+        COMMENT_PUBLISHED : COMMENT_NOT_PUBLISHED;
     }
-    // Don't unset global 'ct_request_id', use it in cleantalk_comment_insert().
+    // Don't clear 'ct_request_id', use it in cleantalk_comment_insert().
   }
 }
 
@@ -131,18 +144,19 @@ function cleantalk_comment_presave($comment) {
  * Implements hook_comment_insert().
  */
 function cleantalk_comment_insert($comment) {
-  if (isset($GLOBALS['ct_request_id'])) {
+  $ct_result = _cleantalk_ct_result();
+  if (!empty($ct_result['ct_request_id'])) {
     // Values of request_id and comment are stored in globals.
     // Store them in DB now.
     db_insert('cleantalk_cids')
     ->fields(array(
     'cid' => $comment->cid,
-    'ct_request_id' => $GLOBALS['ct_request_id'],
-    'ct_result_comment' => isset($GLOBALS['ct_result_comment']) ? $GLOBALS['ct_result_comment'] : '',
+    'ct_request_id' => $ct_result['ct_request_id'],
+    'ct_result_comment' => empty($ct_result['ct_result_comment']) ?
+      '' : $ct_result['ct_result_comment'],
     ))
     ->execute();
-
-    unset($GLOBALS['ct_request_id']);
+    _cleantalk_ct_result('set');
   }
 }
 
@@ -153,15 +167,17 @@ function cleantalk_user_insert(&$edit, $account, $category) {
   if ($category != 'account') {
     return;
   }
-  if (isset($GLOBALS['ct_request_id'])) {
+  $ct_result = _cleantalk_ct_result();
+  if (!empty($ct_result['ct_request_id'])) {
     db_insert('cleantalk_uids')
     ->fields(array(
     'uid' => $account->uid,
-    'ct_request_id' => $GLOBALS['ct_request_id'],
-    'ct_result_comment' => isset($GLOBALS['ct_result_comment']) ? $GLOBALS['ct_result_comment'] : '',
+    'ct_request_id' => $ct_result['ct_request_id'],
+    'ct_result_comment' => empty($ct_result['ct_result_comment']) ?
+      '' : $GLOBALS['ct_result_comment'],
     ))
     ->execute();
-    unset($GLOBALS['ct_request_id']);
+    _cleantalk_ct_result('set');
   }
 }
 
@@ -242,7 +258,8 @@ function cleantalk_comment_view_alter(&$build) {
       $ct_result = $result->fetchObject();
       if (!empty($ct_result->ct_result_comment)) {
         // Value of ct_result_comment is sanitized already (before storing).
-        $build['comment_body'][0]['#markup'] .= '<hr>' . $ct_result->ct_result_comment;
+        $build['comment_body'][0]['#markup'] .= '<hr>' .
+          $ct_result->ct_result_comment;
       }
     }
   }
@@ -278,68 +295,68 @@ function cleantalk_mail($key, &$message, $params) {
 }
 
 /**
+ * Implements hook_libraries_info().
+ *
+ * For defining external CleanTalk librariy.
+ */
+function cleantalk_libraries_info() {
+  // Expected to be extracted into 'sites/all/libraries/cleantalk'.
+  $libraries['cleantalk'] = array(
+    'name' => 'CleanTalk PHP-antispam classes',
+    'vendor url' => 'http://cleantalk.org',
+    'download url' => 'https://github.com/CleanTalk/php-antispam',
+    'version arguments' => array(
+      'file' => 'cleantalk.class.php',
+      'pattern' => '/@version\s+([0-9a-zA-Z\.-]+)/',
+      'lines' => 10,
+    ),
+    'files' => array(
+      'php' => array('cleantalk.class.php'),
+    ),
+  );
+  return $libraries;
+}
+
+/**
  * Cleantalk inner function - gets working server.
  */
 function _cleantalk_get_ws() {
-  $result = db_select('cleantalk_server', 'c')
-  ->fields('c', array('work_url', 'server_url', 'server_ttl', 'server_changed'))
-  ->range(0, 1)
-  ->execute();
-  if ($result->rowCount() > 0) {
-    $current_ws = $result->fetchObject();
-    return array(
-      'work_url' => $current_ws->work_url,
-      'server_url' => $current_ws->server_url,
-      'server_ttl' => $current_ws->server_ttl,
-      'server_changed' => $current_ws->server_changed,
-    );
-  }
-  else {
-    return array(
-      'work_url' => 'http://moderate.cleantalk.ru',
-      'server_url' => 'http://moderate.cleantalk.ru',
-      'server_ttl' => 0,
-      'server_changed' => 0,
-    );
-  }
+  return array(
+    'work_url' => variable_get('cleantalk_work_url', 'http://moderate.cleantalk.ru'),
+    'server_url' => variable_get('cleantalk_server_url', 'http://moderate.cleantalk.ru'),
+    'server_ttl' => variable_get('cleantalk_server_ttl', 0),
+    'server_changed' => variable_get('cleantalk_server_changed', 0),
+  );
 }
 
 /**
  * Cleantalk inner function - sets working server.
  */
-function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru', $server_url = 'http://moderate.cleantalk.ru', $server_ttl = 0, $server_changed = 0) {
-  // Cannot use db_merge because there are no key fields to merge.
-  $result = db_select('cleantalk_server', 'c')
-  ->countQuery()
-  ->execute()
-  ->fetchObject();
-  if (property_exists($result, 'expression') && intval($result->expression) > 0) {
-    db_update('cleantalk_server')
-    ->fields(array(
-      'work_url' => $work_url,
-      'server_url' => $server_url,
-      'server_ttl' => $server_ttl,
-      'server_changed' => $server_changed,
-    ))
-    ->execute();
-  }
-  else {
-    db_insert('cleantalk_server')
-    ->fields(array(
-      'work_url' => $work_url,
-      'server_url' => $server_url,
-      'server_ttl' => $server_ttl,
-      'server_changed' => $server_changed,
-    ))
-    ->execute();
-  }
+function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru',
+  $server_url = 'http://moderate.cleantalk.ru',
+  $server_ttl = 0, $server_changed = 0) {
+  variable_set('cleantalk_work_url', $work_url);
+  variable_set('cleantalk_server_url', $server_url);
+  variable_set('cleantalk_server_ttl', $server_ttl);
+  variable_set('cleantalk_server_changed', $server_changed);
 }
 
 /**
  * Cleantalk inner function - sends feedback to server.
  */
 function _cleantalk_send_feedback($request_id, $feedback) {
-  require_once DRUPAL_ROOT . '/' . libraries_get_path('cleantalk') . '/cleantalk.class.php';
+  if (!($library = libraries_load('cleantalk')) || empty($library['loaded'])) {
+    watchdog(
+      'cleantalk',
+      _cleantalk_library_missing_message_4runtime(
+        'CleanTalk PHP-antispam classes',
+        'sites/all/libraries/cleantalk'
+      ),
+      array(),
+      WATCHDOG_ERROR
+    );
+    return;
+  }
 
   $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_ws = _cleantalk_get_ws();
@@ -364,10 +381,16 @@ function _cleantalk_send_feedback($request_id, $feedback) {
  */
 function _cleantalk_library_missing_message_4runtime($title, $path) {
   $t = get_t();
-  return $t('"Antispam by CleanTalk" module is NOT WORKING due to missing or broken CleanTalk library.') .
+  return
+    $t(
+      '"Antispam by CleanTalk" module is NOT WORKING' .
+      ' due to missing or broken CleanTalk library.'
+    ) .
     ' <br />' .
     $t(
-      'Please download <a target="_blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      'Please download <a target="_blank" href="@url">@title</a>, extract ' .
+      'the archive and copy the contents to the following location:' .
+      '<br /><code>@path</code>.',
       array(
         '@url' => 'https://github.com/CleanTalk/php-antispam',
         '@path' => $path,
@@ -375,7 +398,10 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
       )
     ) .
     ' <br />' .
-    $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
+    $t(
+      'Make sure 2 files <strong>cleantalk.class.php</strong> and ' .
+      '<strong>JSON.php</strong> are located there.'
+    ) .
     '<br />';
 }
 
@@ -383,6 +409,14 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
  * Cleantalk inner function - alters needed form.
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
+  static $js_cookie_added = FALSE;
+
+  if ($js_cookie_added) {
+    return;
+  }
+
+  $js_cookie_added = TRUE;
+
   if ($form_id == 'user_register_form') {
     $session_time_key = 'ct_submit_register_time';
     $form['#validate'][] = 'cleantalk_validate_register';
@@ -392,32 +426,32 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
     $form['#validate'][] = 'cleantalk_validate_comment';
   }
 
-  // All FALSE means new rendered comment form.
-  // All TRUE means comment form after Preview pressed!
-  $_SESSION[$session_time_key] = time();
+  drupal_session_start();
+  $_SESSION[$session_time_key] = REQUEST_TIME;
 
-  $ct_check_def = '0';
-  $ct_check_value = _cleantalk_get_checkjs_value();
   $field_name = 'ct_checkjs';
-  $field_id = $field_name . '_' . md5(rand(0, 1000));
-  // We need hidden element with unique id.
-  // But we cannot set id by standard way.
-  // So we create dummy element with needed one as prefix.
-  // Also we cannot place JS in separate file.
-  // Because it is not static - we have to use generated values.
-  $html_template = "\n" .
-    '<input type="hidden" id="%s" name="%s" value="%s" />' . "\n" .
-    '<script type="text/javascript">' . "\n" .
-    '// <![CDATA[' . "\n" .
-    'setTimeout("document.getElementById(\"%s\").value = document.getElementById(\"%s\").value.replace(/^%s$/, \"%s\");",1000);' . "\n" .
-    '// ]]>' . "\n" .
-    '</script>' . "\n\n";
-  $ct_addon_body = sprintf($html_template, $field_id, $field_name, $ct_check_def, $field_id, $field_id, $ct_check_def, $ct_check_value);
+  $ct_check_def = '0';
+  if (!isset($_COOKIE[$field_name])) {
+    setcookie($field_name, $ct_check_def, 0, '/');
+  }
 
-  $form['ct_addon'] = array(
-    '#type' => 'hidden',
-    '#value' => 0,
-    '#suffix' => $ct_addon_body,
+  // We cannot place JS in separate file.
+  // Because it is not static - we have to use generated values.
+  $ct_check_value = _cleantalk_get_checkjs_value();
+  $js_template = 'function ctSetCookie(c_name, value) {
+  document.cookie = c_name + "=" + escape(value) + "; path=/";
+}
+ctSetCookie("%s", "%s");';
+  $js_addon_body = sprintf($js_template, $field_name, $ct_check_value);
+
+  drupal_add_js($js_addon_body,
+    array(
+      'type' => 'inline',
+      'scope' => 'footer',
+      'weight' => 5,
+      'cache' => FALSE,
+      'every_page' => FALSE,
+    )
   );
 }
 
@@ -425,7 +459,8 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
  * Cleantalk inner function - gets JavaScript checking value.
  */
 function _cleantalk_get_checkjs_value() {
-  return md5(variable_get('cleantalk_authkey', '') . '+' . variable_get('site_mail', ini_get('sendmail_from')));
+  return md5(variable_get('cleantalk_authkey', '') . '+' .
+    variable_get('site_mail', ini_get('sendmail_from')));
 }
 
 /**
@@ -433,15 +468,26 @@ function _cleantalk_get_checkjs_value() {
  */
 function _cleantalk_check_spam($spam_check) {
   $my_module = 'cleantalk';
-  require_once DRUPAL_ROOT . '/' . libraries_get_path($my_module) . '/cleantalk.class.php';
+  if (!($library = libraries_load($my_module)) || empty($library['loaded'])) {
+    watchdog(
+      'cleantalk',
+      _cleantalk_library_missing_message_4runtime(
+        'CleanTalk PHP-antispam classes',
+        'sites/all/libraries/cleantalk'
+      ),
+      array(),
+      WATCHDOG_ERROR
+    );
+    return;
+  }
 
   $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_ws = _cleantalk_get_ws();
 
-  if (!isset($_POST['ct_checkjs'])) {
+  if (!isset($_COOKIE['ct_checkjs'])) {
     $checkjs = NULL;
   }
-  elseif ($_POST['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
+  elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
     $checkjs = 1;
   }
   else {
@@ -457,7 +503,7 @@ function _cleantalk_check_spam($spam_check) {
   $ct->server_ttl = $ct_ws['server_ttl'];
   $ct->server_changed = $ct_ws['server_changed'];
 
-  $sender_info = json_encode(
+  $sender_info = drupal_json_encode(
     array(
       'cms_lang' => 'en',
       'REFFERRER' => $refferrer,
@@ -477,15 +523,17 @@ function _cleantalk_check_spam($spam_check) {
   $ct_request->sender_ip = ip_address();
 
   $ct_submit_time = NULL;
+  drupal_session_start();
   switch ($spam_check['type']) {
     case 'comment':
       if (isset($_SESSION['ct_submit_comment_time'])) {
-        $ct_submit_time = time() - $_SESSION['ct_submit_comment_time'];
+        $ct_submit_time = REQUEST_TIME - $_SESSION['ct_submit_comment_time'];
       }
       $timelabels_key = 'mail_error_comment';
 
       $ct_request->submit_time = $ct_submit_time;
-      $ct_request->message = $spam_check['message_title'] . " \n\n" . $spam_check['message_body'];
+      $ct_request->message = $spam_check['message_title'] . " \n\n" .
+        $spam_check['message_body'];
 
       $example = '';
       $a_example = array();
@@ -498,8 +546,8 @@ function _cleantalk_check_spam($spam_check) {
       $a_post_info['comment_type'] = 'comment';
 
       // JSON format.
-      $example = json_encode($a_example);
-      $post_info = json_encode($a_post_info);
+      $example = drupal_json_encode($a_example);
+      $post_info = drupal_json_encode($a_post_info);
 
       // Plain text format.
       if ($example === FALSE) {
@@ -521,7 +569,7 @@ function _cleantalk_check_spam($spam_check) {
 
     case 'register':
       if (isset($_SESSION['ct_submit_register_time'])) {
-        $ct_submit_time = time() - $_SESSION['ct_submit_register_time'];
+        $ct_submit_time = REQUEST_TIME - $_SESSION['ct_submit_register_time'];
       }
       $timelabels_key = 'mail_error_reg';
       $ct_request->submit_time = $ct_submit_time;
@@ -536,7 +584,7 @@ function _cleantalk_check_spam($spam_check) {
 
   if ($ct->server_change) {
     _cleantalk_set_ws(
-            $ct->work_url, $ct->server_url, $ct->server_ttl, time()
+            $ct->work_url, $ct->server_url, $ct->server_ttl, REQUEST_TIME
     );
   }
 
@@ -564,7 +612,7 @@ function _cleantalk_check_spam($spam_check) {
     if ($result->rowCount() == 0) {
       $send_flag = TRUE;
     }
-    elseif (time() - 900 > $result->fetchObject()->ct_value) {
+    elseif (REQUEST_TIME - 900 > $result->fetchObject()->ct_value) {
       // 15 minutes.
       $send_flag = TRUE;
     }
@@ -575,7 +623,7 @@ function _cleantalk_check_spam($spam_check) {
         'ct_key' => $timelabels_key,
       ))
       ->fields(array(
-        'ct_value' => time(),
+        'ct_value' => REQUEST_TIME,
       ))
       ->execute();
 
@@ -603,8 +651,8 @@ function _cleantalk_check_spam($spam_check) {
     // Not spammer.
     $ret_val['allow'] = 1;
     // Store request_id in globals to store it in DB later.
-    $GLOBALS['ct_request_id'] = $ct_result->id;
-    // $GLOBALS['ct_result_comment'] - don't store, means good comment.
+    _cleantalk_ct_result('set', $ct_result->id);
+    // Don't store 'ct_result_comment', means good comment.
   }
   else {
     // Spammer.
@@ -615,10 +663,9 @@ function _cleantalk_check_spam($spam_check) {
     if ($spam_check['type'] == 'comment' && $ct_result->stop_queue == 0) {
       // Spammer and stop_queue == 0 - to manual approvement.
       $ret_val['stop_queue'] = 0;
-      // Store request_id and comment in globals to store them in DB later.
-      $GLOBALS['ct_request_id'] = $ct_result->id;
-      // Store $GLOBALS['ct_result_comment'] - means bad comment.
-      $GLOBALS['ct_result_comment'] = $ret_val['ct_result_comment'];
+      // Store request_id and comment in static to store them in DB later.
+      // Store 'ct_result_comment' - means bad comment.
+      _cleantalk_ct_result('set', $ct_result->id, $ret_val['ct_result_comment']);
     }
     else {
       // New user or Spammer and stop_queue == 1 - display form error message.
@@ -639,4 +686,23 @@ function _cleantalk_filter_response($ct_response) {
     $err_str = preg_replace('/\*\*\*/i', '', $ct_response);
   }
   return filter_xss($err_str, array('a'));
+}
+
+/**
+ * Cleantalk inner function - stores spam checking result.
+ */
+function _cleantalk_ct_result($cmd = 'get', $id = '', $comment = '') {
+  static $request_id = '';
+  static $result_comment = '';
+
+  if ($cmd == 'set') {
+    $request_id = $id;
+    $result_comment = $comment;
+  }
+  else {
+    return array(
+      'ct_request_id' => $request_id,
+      'ct_result_comment' => $result_comment,
+    );
+  }
 }

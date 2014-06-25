@@ -78,37 +78,6 @@ function cleantalk_schema() {
     ),
     'primary key' => array('uid'),
   );
-  $schema['cleantalk_server'] = array(
-    'description' => 'Current CleanTalk working server.',
-    'fields' => array(
-      'work_url' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'server_url' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'server_ttl' => array(
-        'type' => 'int',
-        'length' => 12,
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'server_changed' => array(
-        'type' => 'int',
-        'length' => 12,
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-  );
   return $schema;
 }
 
@@ -117,7 +86,12 @@ function cleantalk_schema() {
  */
 function cleantalk_uninstall() {
   variable_del('cleantalk_automod');
+  variable_del('cleantalk_comments');
   variable_del('cleantalk_authkey');
+  variable_get('cleantalk_work_url');
+  variable_get('cleantalk_server_url');
+  variable_get('cleantalk_server_ttl');
+  variable_get('cleantalk_server_changed');
 }
 
 /**
@@ -128,26 +102,31 @@ function cleantalk_requirements($phase) {
   // Ensure translations don't break at install time.
   $t = get_t();
 
-  drupal_load('module', 'libraries');
-  $path = libraries_get_path('cleantalk');
+  $my_module = 'cleantalk';
   $title = 'CleanTalk PHP-antispam classes';
+
+  drupal_load('module', 'libraries');
+  $path = libraries_get_path($my_module);
+
   if (
     !$path ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php') ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php')
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php') ||
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php')
   ) {
     // Since Libraries 2.x, $path is FALSE if the library does not exist.
     $path = 'sites/all/libraries/cleantalk';
-    $requirements['cleantalk'] = array(
-      'title' => $t($title),
+    $requirements[$my_module] = array(
+      'title' => $t('CleanTalk PHP-antispam classes'),
       'value' => $t('Missing'),
       'severity' => REQUIREMENT_ERROR,
-      'description' => $phase == 'runtime' ? _cleantalk_library_missing_message_4runtime($title, $path) : _cleantalk_library_missing_message_4install($title, $path),
+      'description' => $phase == 'runtime' ?
+      _cleantalk_library_missing_message_4runtime($title, $path) :
+      _cleantalk_library_missing_message_4install($title, $path),
     );
   }
   else {
-    $requirements['cleantalk'] = array(
-      'title' => $t($title),
+    $requirements[$my_module] = array(
+      'title' => $t('CleanTalk PHP-antispam classes'),
       'value' => $t('Installed'),
       'severity' => REQUIREMENT_OK,
     );
@@ -160,9 +139,22 @@ function cleantalk_requirements($phase) {
  * Implements hook_enable().
  */
 function cleantalk_enable() {
-  if (!libraries_get_path('cleantalk')) {
-    module_disable(array('cleantalk'));
-    drupal_set_message(_cleantalk_library_missing_message_4install('CleanTalk PHP-antispam classes', 'sites/all/libraries/cleantalk'), 'error');
+  $my_module = 'cleantalk';
+  $title = 'CleanTalk PHP-antispam classes';
+
+  drupal_load('module', 'libraries');
+  $path = libraries_get_path($my_module);
+
+  if (
+    !$path ||
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php') ||
+    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php')
+  ) {
+    module_disable(array($my_module));
+    drupal_set_message(
+      _cleantalk_library_missing_message_4install($title, 'sites/all/libraries/cleantalk'),
+      'error'
+    );
   }
 }
 
@@ -174,7 +166,9 @@ function _cleantalk_library_missing_message_4install($title, $path) {
   return $t('"Antispam by CleanTalk" module is DISABLED due to missing or broken CleanTalk library.') .
     ' <br />' .
     $t(
-      'Please download <a target="_blank" href="@url">@title</a>, extract the archive and copy the contents to the following location:<br /><code>@path</code>.',
+      'Please download <a target="_blank" href="@url">@title</a>,' .
+      ' extract the archive and copy the contents to the following location:' .
+      '<br /><code>@path</code>.',
       array(
         '@url' => 'https://github.com/CleanTalk/php-antispam',
         '@path' => $path,
@@ -182,6 +176,9 @@ function _cleantalk_library_missing_message_4install($title, $path) {
       )
     ) .
     ' <br />' .
-    $t('Make sure 2 files <strong>cleantalk.class.php</strong> and <strong>JSON.php</strong> are located there.') .
+    $t(
+       'Make sure 2 files <strong>cleantalk.class.php</strong> and' .
+       ' <strong>JSON.php</strong> are located there.'
+    ) .
     '<br />';
 }
