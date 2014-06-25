@@ -119,9 +119,7 @@ function cleantalk_requirements($phase) {
       'title' => $t('CleanTalk PHP-antispam classes'),
       'value' => $t('Missing'),
       'severity' => REQUIREMENT_ERROR,
-      'description' => $phase == 'runtime' ?
-      _cleantalk_library_missing_message_4runtime($title, $path) :
-      _cleantalk_library_missing_message_4install($title, $path),
+      'description' => $phase == 'runtime' ? _cleantalk_library_missing_message_4runtime($title, $path) : _cleantalk_library_missing_message_4install($title, $path),
     );
   }
   else {

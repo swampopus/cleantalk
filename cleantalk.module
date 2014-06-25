@@ -25,12 +25,9 @@ function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
 function cleantalk_validate_register(&$form, &$form_state) {
   $spam_check = array();
   $spam_check['type'] = 'register';
-  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ?
-    $form_state['values']['mail'] : '';
-  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ?
-    $form_state['values']['name'] : '';
-  $spam_check['timezone'] = !empty($form_state['values']['timezone']) ?
-    $form_state['values']['timezone'] : '';
+  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+  $spam_check['timezone'] = !empty($form_state['values']['timezone']) ? $form_state['values']['timezone'] : '';
 
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
@@ -63,33 +60,26 @@ function cleantalk_validate_comment(&$form, &$form_state) {
     }
   }
 
-  $comment_lang = array_key_exists('language', $form_state['values']) ?
-    $form_state['values']['language'] : LANGUAGE_NONE;
+  $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
   $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
 
   $spam_check = array();
   $spam_check['type'] = 'comment';
-  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ?
-    $form_state['values']['mail'] : '';
-  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ?
-    $form_state['values']['name'] : '';
-  $spam_check['message_title'] = !empty($form_state['values']['subject']) ?
-    $form_state['values']['subject'] : '';
-  $spam_check['message_body'] = isset($comment_body['value']) ?
-    $comment_body['value'] : '';
+  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+  $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+  $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
   $spam_check['example_title'] = '';
   $spam_check['example_body'] = '';
   $spam_check['example_comments'] = '';
 
   // Node id of commented entity - page or article.
-  $nid = array_key_exists('nid', $form_state['values']) ?
-    $form_state['values']['nid'] : NULL;
+  $nid = array_key_exists('nid', $form_state['values']) ? $form_state['values']['nid'] : NULL;
   if ($nid != NULL) {
     // Find node.
     $result_node = node_load($nid);
     if ($result_node) {
-      $spam_check['example_title'] = property_exists($result_node, 'title') ?
-        strip_tags($result_node->title) : '';
+      $spam_check['example_title'] = property_exists($result_node, 'title') ? strip_tags($result_node->title) : '';
       $node_field = field_get_items('node', $result_node, 'body');
       foreach ($node_field as $nf) {
         $field_value = field_view_value('node', $result_node, 'body', $nf);
@@ -98,10 +88,10 @@ function cleantalk_validate_comment(&$form, &$form_state) {
     }
     // Find last 10 comments.
     $result_10 = db_query(
-      'SELECT c.subject AS subject,f.comment_body_value AS value ' .
-      'FROM {comment} AS c ' .
-      'LEFT JOIN {field_data_comment_body} AS f ON c.cid=f.entity_id ' .
-      'WHERE c.nid=:nid AND c.status=1 ORDER BY changed DESC LIMIT 10',
+      'SELECT comment.subject AS subject,fdcb.comment_body_value AS value ' .
+      'FROM {comment} AS comment ' .
+      'LEFT JOIN {field_data_comment_body} AS fdcb ON comment.cid=fdcb.entity_id ' .
+      'WHERE comment.nid=:nid AND comment.status=1 ORDER BY changed DESC LIMIT 10',
       array(':nid' => $nid)
     );
     foreach ($result_10 as $record) {
@@ -133,8 +123,7 @@ function cleantalk_comment_presave($comment) {
       // Automoderation enabled - change comment status.
       // Not empty 'ct_result_comment' means bad comment, set status = 0.
       // Empty 'ct_result_comment' means good comment, set status = 1.
-      $comment->status = empty($ct_result['ct_result_comment']) ?
-        COMMENT_PUBLISHED : COMMENT_NOT_PUBLISHED;
+      $comment->status = empty($ct_result['ct_result_comment']) ? COMMENT_PUBLISHED : COMMENT_NOT_PUBLISHED;
     }
     // Don't clear 'ct_request_id', use it in cleantalk_comment_insert().
   }
@@ -152,8 +141,7 @@ function cleantalk_comment_insert($comment) {
     ->fields(array(
     'cid' => $comment->cid,
     'ct_request_id' => $ct_result['ct_request_id'],
-    'ct_result_comment' => empty($ct_result['ct_result_comment']) ?
-      '' : $ct_result['ct_result_comment'],
+    'ct_result_comment' => empty($ct_result['ct_result_comment']) ? '' : $ct_result['ct_result_comment'],
     ))
     ->execute();
     _cleantalk_ct_result('set');
@@ -173,8 +161,7 @@ function cleantalk_user_insert(&$edit, $account, $category) {
     ->fields(array(
     'uid' => $account->uid,
     'ct_request_id' => $ct_result['ct_request_id'],
-    'ct_result_comment' => empty($ct_result['ct_result_comment']) ?
-      '' : $GLOBALS['ct_result_comment'],
+    'ct_result_comment' => empty($ct_result['ct_result_comment']) ? '' : $GLOBALS['ct_result_comment'],
     ))
     ->execute();
     _cleantalk_ct_result('set');

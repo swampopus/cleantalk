@@ -44,9 +44,9 @@ function cleantalk_settings_form($form, &$form_state) {
     '#title' => t('Enable automoderation'),
     '#default_value' => $ct_automod,
     '#description' => t('Automatically publish good messages and put bad ones to admin approvement.') .
-       '<br /><span class="admin-enabled">' .
-       t('Note: It overrides "Skip comment approval" permissions') .
-       '</span>',
+    '<br /><span class="admin-enabled">' .
+    t('Note: It overrides "Skip comment approval" permissions') .
+    '</span>',
   );
 
   return system_settings_form($form);
