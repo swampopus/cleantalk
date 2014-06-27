@@ -17,6 +17,7 @@ function cleantalk_schema() {
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'Notification ID.',
       ),
       'ct_value' => array(
         'type' => 'int',
@@ -24,6 +25,7 @@ function cleantalk_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
+        'description' => 'Time of last notification.',
       ),
     ),
     'primary key' => array('ct_key'),
@@ -37,18 +39,21 @@ function cleantalk_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
+        'description' => 'ID of checked comment.',
       ),
       'ct_request_id' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'CleanTalk request ID for comment.',
       ),
       'ct_result_comment' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'CleanTalk result for comment.',
       ),
     ),
     'primary key' => array('cid'),
@@ -62,18 +67,21 @@ function cleantalk_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
+        'description' => 'ID of checked user registration.',
       ),
       'ct_request_id' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'CleanTalk request ID for user registration.',
       ),
       'ct_result_comment' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'CleanTalk result for user registration.',
       ),
     ),
     'primary key' => array('uid'),
@@ -131,29 +139,6 @@ function cleantalk_requirements($phase) {
   }
 
   return $requirements;
-}
-
-/**
- * Implements hook_enable().
- */
-function cleantalk_enable() {
-  $my_module = 'cleantalk';
-  $title = 'CleanTalk PHP-antispam classes';
-
-  drupal_load('module', 'libraries');
-  $path = libraries_get_path($my_module);
-
-  if (
-    !$path ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php') ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php')
-  ) {
-    module_disable(array($my_module));
-    drupal_set_message(
-      _cleantalk_library_missing_message_4install($title, 'sites/all/libraries/cleantalk'),
-      'error'
-    );
-  }
 }
 
 /**
