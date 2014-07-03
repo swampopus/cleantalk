@@ -60,7 +60,8 @@ Note:
 -- TESTING --
 
 * Try to register account with "stop_email@example.com" as email address.
-* Try to put comment with "stop_word" in its body.
+* Set "Enable comments test via stop list" flag at https://cleantalk.org/my/
+* Then try to put comment with "stop_word" in its body.
 
 
 -- CONTACT --
