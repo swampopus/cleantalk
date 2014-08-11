@@ -20,6 +20,20 @@ function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cleantalk_form_contact_site_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cleantalk_form_contact_personal_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
+}
+
+/**
  * Cleantalk registration validation function.
  */
 function cleantalk_validate_register(&$form, &$form_state) {
@@ -96,6 +110,48 @@ function cleantalk_validate_comment(&$form, &$form_state) {
         strip_tags($record->value) . " \n\n";
     }
   }
+
+  $spam_result = _cleantalk_check_spam($spam_check);
+  if (isset($spam_result)
+    && is_array($spam_result)
+    && $spam_result['errno'] == 0
+    && $spam_result['allow'] != 1
+    && $spam_result['stop_queue'] == 1
+  ) {
+    // Value of ct_result_comment is sanitized already (before storing).
+    form_set_error('comment_body', $spam_result['ct_result_comment']);
+  }
+}
+
+/**
+ * Cleantalk contact message validation function.
+ */
+function cleantalk_validate_contact_message(&$form, &$form_state) {
+  global $user;
+  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
+  if ($user->uid > 0) {
+
+    $result = db_query(
+      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+      array(':uid' => $user->uid)
+    );
+    $count = intval($result->fetchObject()->count);
+
+    $ct_comments = variable_get('cleantalk_comments', 3);
+    if ($count >= $ct_comments) {
+      return;
+    }
+  }
+
+  $spam_check = array();
+  $spam_check['type'] = 'contact';
+  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+  $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+  $spam_check['message_body'] = !empty($form_state['values']['message']) ? $form_state['values']['message'] : '';
+  $spam_check['example_title'] = '';
+  $spam_check['example_body'] = '';
+  $spam_check['example_comments'] = '';
 
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
@@ -407,7 +463,12 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   }
   else {
     $session_time_key = 'ct_submit_comment_time';
-    $form['#validate'][] = 'cleantalk_validate_comment';
+    if ($form_id == 'contact_site_form' || $form_id == 'contact_personal_form') {
+      $form['#validate'][] = 'cleantalk_validate_contact_message';    
+    }
+    else {
+      $form['#validate'][] = 'cleantalk_validate_comment';
+    }
   }
 
   drupal_session_start();
@@ -510,6 +571,7 @@ function _cleantalk_check_spam($spam_check) {
   drupal_session_start();
   switch ($spam_check['type']) {
     case 'comment':
+    case 'contact':
       if (isset($_SESSION['ct_submit_comment_time'])) {
         $ct_submit_time = REQUEST_TIME - $_SESSION['ct_submit_comment_time'];
       }

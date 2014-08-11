@@ -7,6 +7,7 @@ Key features.
 * No needs in CAPTCHA, etc.
 * Protection from spam bots and manual spam comments.
 * Automoderation - automatic publication of relevant comments.
+* Contact forms protection.
 
 What CleanTalk is.
  CleanTalk is a SaaS spam protection service for Web-sites.
