@@ -83,33 +83,6 @@ function cleantalk_validate_comment(&$form, &$form_state) {
   $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
   $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
   $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
-  $spam_check['example_title'] = '';
-  $spam_check['example_body'] = '';
-  $spam_check['example_comments'] = '';
-
-  // Node id of commented entity - page or article.
-  $nid = array_key_exists('nid', $form_state['values']) ? $form_state['values']['nid'] : NULL;
-  if ($nid != NULL) {
-    // Find node.
-    $result_node = node_load($nid);
-    if ($result_node) {
-      $spam_check['example_title'] = property_exists($result_node, 'title') ? strip_tags($result_node->title) : '';
-      $node_field = field_get_items('node', $result_node, 'body');
-      foreach ($node_field as $nf) {
-        $field_value = field_view_value('node', $result_node, 'body', $nf);
-        $spam_check['example_body'] .= strip_tags(render($field_value));
-      }
-    }
-    // Find last 10 comments.
-    $result_10 = db_query(
-      'SELECT c.subject AS subject,f.comment_body_value AS value FROM {comment} AS c LEFT JOIN {field_data_comment_body} AS f ON c.cid=f.entity_id WHERE c.nid=:nid AND c.status=1 ORDER BY changed DESC LIMIT 10',
-      array(':nid' => $nid)
-    );
-    foreach ($result_10 as $record) {
-      $spam_check['example_comments'] .= strip_tags($record->subject) . " \n\n" .
-        strip_tags($record->value) . " \n\n";
-    }
-  }
 
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
@@ -149,9 +122,6 @@ function cleantalk_validate_contact_message(&$form, &$form_state) {
   $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
   $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
   $spam_check['message_body'] = !empty($form_state['values']['message']) ? $form_state['values']['message'] : '';
-  $spam_check['example_title'] = '';
-  $spam_check['example_body'] = '';
-  $spam_check['example_comments'] = '';
 
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
@@ -409,7 +379,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-101';
+  $ct_request->agent = 'drupal-102';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -483,12 +453,12 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   // We cannot place JS in separate file.
   // Because it is not static - we have to use generated values.
   $ct_check_value = _cleantalk_get_checkjs_value();
-  $js_template = 'function ctSetCookie(c_name, value) {
-  document.cookie = c_name + "=" + escape(value) + "; path=/";
+  $js_template = 'function ctSetCookie(c_name, value, def_value) {
+  document.cookie = c_name + "=" + escape(value.replace(/^def_value$/, value)) + "; path=/";
 }
-ctSetCookie("%s", "%s");';
-  $js_addon_body = sprintf($js_template, $field_name, $ct_check_value);
-
+setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
+  $js_addon_body = sprintf($js_template, $field_name, $ct_check_value, $ct_check_def);
+  
   drupal_add_js($js_addon_body,
     array(
       'type' => 'inline',
@@ -559,7 +529,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-101';
+  $ct_request->agent = 'drupal-102';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -581,34 +551,21 @@ function _cleantalk_check_spam($spam_check) {
       $ct_request->message = $spam_check['message_title'] . " \n\n" .
         $spam_check['message_body'];
 
-      $example = '';
-      $a_example = array();
-      $a_example['title'] = $spam_check['example_title'];
-      $a_example['body'] = $spam_check['example_body'];
-      $a_example['comments'] = $spam_check['example_comments'];
-
       // Additional info.
       $post_info = '';
       $a_post_info['comment_type'] = 'comment';
 
       // JSON format.
-      $example = drupal_json_encode($a_example);
       $post_info = drupal_json_encode($a_post_info);
 
       // Plain text format.
-      if ($example === FALSE) {
-        $example = '';
-        $example .= $a_example['title'] . " \n\n";
-        $example .= $a_example['body'] . " \n\n";
-        $example .= $a_example['comments'];
-      }
       if ($post_info === FALSE) {
         $post_info = '';
       }
 
-      // Example text + last N comments in json or plain text format.
-      $ct_request->example = $example;
       $ct_request->post_info = $post_info;
+      // Example is obsolete now.
+      $ct_request->example = '';
 
       $ct_result = $ct->isAllowMessage($ct_request);
       break;
