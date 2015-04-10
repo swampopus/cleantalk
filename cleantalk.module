@@ -355,7 +355,7 @@ function cleantalk_libraries_info() {
   $libraries['cleantalk'] = array(
     'name' => 'CleanTalk PHP-antispam classes',
     'vendor url' => 'http://cleantalk.org',
-    'download url' => 'https://github.com/CleanTalk/php-antispam',
+    'download url' => 'https://github.com/CleanTalk/php-antispam/archive/master.zip',
     'version arguments' => array(
       'file' => 'cleantalk.class.php',
       'pattern' => '/@version\s+([0-9a-zA-Z\.-]+)/',
@@ -443,7 +443,7 @@ function _cleantalk_library_missing_message_4runtime($title, $path) {
       'the archive and copy the contents to the following location:' .
       '<br /><code>@path</code>.',
       array(
-        '@url' => 'https://github.com/CleanTalk/php-antispam',
+        '@url' => 'https://github.com/CleanTalk/php-antispam/archive/master.zip',
         '@path' => $path,
         '@title' => $title,
       )

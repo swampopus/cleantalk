@@ -153,7 +153,7 @@ function _cleantalk_library_missing_message_4install($title, $path) {
       ' extract the archive and copy the contents to the following location:' .
       '<br /><code>@path</code>.',
       array(
-        '@url' => 'https://github.com/CleanTalk/php-antispam',
+        '@url' => 'https://github.com/CleanTalk/php-antispam/archive/master.zip',
         '@path' => $path,
         '@title' => $title,
       )

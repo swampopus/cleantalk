@@ -32,14 +32,14 @@ Note:
   http://drupal.org/project/libraries
 
 * CleanTalk PHP-antispam classes
-  https://github.com/CleanTalk/php-antispam
+  https://github.com/CleanTalk/php-antispam/archive/master.zip
 
 
 -- INSTALLATION --
 
 1. Download latest CleanTalk PHP-antispam classes from
 
-     https://github.com/CleanTalk/php-antispam
+     https://github.com/CleanTalk/php-antispam/archive/master.zip
 
    and extract the following files into a 'cleantalk' library directory:
 
