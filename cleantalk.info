@@ -2,10 +2,4 @@ name = Antispam by CleanTalk
 description = Antispam service from <a target="_blank" href="http://cleantalk.org">CleanTalk</a> to protect your site
 configure = admin/config/cleantalk
 core = 7.x
-
-; Information added by Drupal.org packaging script on 2014-11-25
-version = "7.x-1.6"
-core = "7.x"
-project = "cleantalk"
-datestamp = "1416926638"
-
+; dependencies[] = libraries

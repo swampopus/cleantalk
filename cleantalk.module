@@ -12,6 +12,149 @@
 $cleantalk_executed = false;
 error_reporting(E_ALL);
 
+/**
+Cleantalk Spam FireWall class
+**/
+
+class CleanTalkSFW
+{
+	public $ip = 0;
+	public $ip_str = '';
+	public $ip_array = Array();
+	public $ip_str_array = Array();
+	public $blocked_ip = '';
+	public $result = false;
+	
+	public function cleantalk_get_real_ip()
+	{
+		if ( function_exists( 'apache_request_headers' ) )
+		{
+			$headers = apache_request_headers();
+		}
+		else
+		{
+			$headers = $_SERVER;
+		}
+		if ( array_key_exists( 'X-Forwarded-For', $headers ) )
+		{
+			$the_ip=explode(",", trim($headers['X-Forwarded-For']));
+			$the_ip = trim($the_ip[0]);
+			$this->ip_str_array[]=$the_ip;
+			$this->ip_array[]=sprintf("%u", ip2long($the_ip));
+		}
+		if ( array_key_exists( 'HTTP_X_FORWARDED_FOR', $headers ))
+		{
+			$the_ip=explode(",", trim($headers['HTTP_X_FORWARDED_FOR']));
+			$the_ip = trim($the_ip[0]);
+			$this->ip_str_array[]=$the_ip;
+			$this->ip_array[]=sprintf("%u", ip2long($the_ip));
+		}
+		$the_ip = filter_var( $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 );
+		$this->ip_str_array[]=$the_ip;
+		$this->ip_array[]=sprintf("%u", ip2long($the_ip));
+
+		if(isset($_GET['sfw_test_ip']))
+		{
+			$the_ip=$_GET['sfw_test_ip'];
+			$this->ip_str_array[]=$the_ip;
+			$this->ip_array[]=sprintf("%u", ip2long($the_ip));
+		}
+		//$this->ip_str=$the_ip;
+		//$this->ip=sprintf("%u", ip2long($the_ip));
+		//print sprintf("%u", ip2long($the_ip));
+	}
+	
+	public function check_ip()
+	{
+		$passed_ip='';
+		for($i=0;$i<sizeof($this->ip_array);$i++)
+		{
+			//$r = $DB->Query("select count(network) as cnt from `cleantalk_sfw` where network = ".$this->ip_array[$i]." & mask;");
+			$r = db_query("select count(network) as cnt from `cleantalk_sfw` where network = ".$this->ip_array[$i]." & mask;");
+    		$cnt = intval($r->fetchObject()->cnt);
+			
+			//$sfw_log=COption::GetOptionString( 'cleantalk.antispam', 'sfw_log', '' );
+			
+			/*if($sfw_log=='')
+			{
+				$sfw_log=Array();
+			}
+			else
+			{
+				$sfw_log=json_decode($sfw_log, true);
+			}*/
+
+			if($cnt>0)
+			{
+				$this->result=true;
+				$this->blocked_ip=$this->ip_str_array[$i];
+				/*if(isset($sfw_log[$this->ip_str_array[$i]]))
+				{
+					$sfw_log[$this->ip_str_array[$i]]['all']++;
+				}
+				else
+				{
+					$sfw_log[$this->ip_str_array[$i]] = Array('datetime'=>time(), 'all' => 1, 'allow' => 0);
+				}*/
+			}
+			else
+			{
+				$passed_ip = $this->ip_str_array[$i];
+			}
+		}
+		if($passed_ip!='')
+		{
+			$key=variable_get('cleantalk_authkey', '');
+			@setcookie ('ct_sfw_pass_key', md5($passed_ip.$key), 0, "/");
+		}
+		//COption::SetOptionString( 'cleantalk.antispam', 'sfw_log', json_encode($sfw_log));
+	}
+	
+	public function sfw_die()
+	{
+		$key=variable_get('cleantalk_authkey', '');
+		$sfw_die_page=file_get_contents(dirname(__FILE__)."/sfw_die_page.html");
+		$sfw_die_page=str_replace("{REMOTE_ADDRESS}",$this->blocked_ip,$sfw_die_page);
+		$sfw_die_page=str_replace("{REQUEST_URI}",$_SERVER['REQUEST_URI'],$sfw_die_page);
+		$sfw_die_page=str_replace("{SFW_COOKIE}",md5($this->blocked_ip.$key),$sfw_die_page);
+		@header('HTTP/1.0 403 Forbidden');
+		print $sfw_die_page;
+		die();
+	}
+	
+	public function send_logs()
+	{
+		$is_sfw=COption::GetOptionString( 'cleantalk.antispam', 'form_sfw', 0 );
+		$sfw_log=COption::GetOptionString( 'cleantalk.antispam', 'sfw_log', '' );
+
+	    if($is_sfw==1 && $sfw_log!='')
+	    {
+	    	$sfw_log=json_decode($sfw_log, true);
+	    	$data=Array();
+	    	foreach($sfw_log as $key=>$value)
+	    	{
+	    		$data[]=Array($key, $value['all'], $value['allow'], $value['datetime']);
+	    	}
+	    	$qdata = array (
+				'data' => json_encode($data),
+				'rows' => count($data),
+				'timestamp' => time()
+			);
+			
+			$result=sendRawRequest('https://api.cleantalk.org/?method_name=sfw_logs&auth_key='.$key, $qdata, false);
+			$result = json_decode($result);
+			if(isset($result->data) && isset($result->data->rows))
+			{
+				if($result->data->rows == count($data))
+				{
+					//COption::SetOptionString( 'cleantalk.antispam', 'sfw_log', '');
+				}
+			}
+			
+	    }
+	}
+}
+
 
 /**
  * Cleantalk base class
@@ -1041,7 +1184,7 @@ function sendRawRequest($url,$data,$isJSON=false,$timeout=3) {
         $data=http_build_query($data);
     }
     else {
-        $data= drupal_json_encode($data);
+        $data= json_encode($data);
     }
     $curl_exec=false;
     if (function_exists('curl_init') && function_exists('json_decode')) {
@@ -1131,7 +1274,15 @@ function cleantalk_get_real_ip()
 */
 
 function cleantalk_page_build(&$page) {
-  drupal_session_start();
+  drupal_session_initialize();
+  drupal_save_session(true);
+  
+  if($_SERVER['REQUEST_METHOD']=='GET')
+  {
+  	$_SESSION['ct_submit_comment_time'] = REQUEST_TIME;
+  	$_SESSION['ct_submit_register_time'] = REQUEST_TIME;
+  }
+  
   $ct_check_def = '0';
   $ct_check_value = _cleantalk_get_checkjs_value();
   $js_template = 'function ctSetCookie(c_name, value, def_value) {
@@ -1165,9 +1316,22 @@ function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function cleantalk_form_node_form_alter(&$form, &$form_state, $form_id) {
+  _cleantalk_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+//function cleantalk_form_alter(&$form, &$form_state, $form_id) {
+//  _cleantalk_form_alter($form, $form_state, $form_id);
+//}
+
+/**
  * Implements hook_form_BASE_FORM_ID_alter()
  */
-
 function cleantalk_form_comment_node_webform_form_alter( &$form, &$form_state,$form_id ) {
   _cleantalk_form_alter($form, $form_state, $form_id);
 }
@@ -1283,16 +1447,36 @@ function cleantalk_validate_comment(&$form, &$form_state) {
     }
   }
 
-  $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-  $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
-
   $spam_check = array();
-  $spam_check['type'] = 'comment';
-  $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-  $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-  $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
-  $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
 
+  $base_form_id = $form_state['build_info']['base_form_id'];
+  if ($base_form_id == 'comment_form') {
+    $spam_check['type'] = 'comment';
+    
+    $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+    $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+
+    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+    $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+  } else if ($base_form_id == 'node_form') {
+    $spam_check['type'] = 'comment';
+
+    $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+    $comment_body = $form_state['values']['body'][$comment_lang][0];
+
+    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+    $spam_check['message_title'] = !empty($form_state['values']['title']) ? $form_state['values']['title'] : '';
+    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+      
+  }
+  
+  if (empty($spam_check)) {
+      return;
+  }
+  
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
     && is_array($spam_result)
@@ -1356,6 +1540,20 @@ function cleantalk_comment_presave($comment) {
       // Not empty 'ct_result_comment' means bad comment, set status = 0.
       // Empty 'ct_result_comment' means good comment, set status = 1.
       $comment->status = empty($ct_result['ct_result_comment']) ? COMMENT_PUBLISHED : COMMENT_NOT_PUBLISHED;
+    }
+    // Don't clear 'ct_request_id', use it in cleantalk_comment_insert().
+  }
+}
+
+function cleantalk_node_presave($node) {
+  $ct_result = _cleantalk_ct_result();
+  if (!empty($ct_result['ct_request_id'])) {
+    $ct_automod = variable_get('cleantalk_automod', 1);
+    if ($ct_automod == 1) {
+      // Automoderation enabled - change comment status.
+      // Not empty 'ct_result_comment' means bad comment, set status = 0.
+      // Empty 'ct_result_comment' means good comment, set status = 1.
+      $node->status = empty($ct_result['ct_result_comment']) ? NODE_PUBLISHED : NODE_NOT_PUBLISHED;
     }
     // Don't clear 'ct_request_id', use it in cleantalk_comment_insert().
   }
@@ -1575,7 +1773,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-150';
+  $ct_request->agent = 'drupal-201';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1617,10 +1815,21 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   static $js_cookie_added = FALSE;
 
-  if ($js_cookie_added) {
+  /*if ($js_cookie_added) {
     return;
+  }*/
+  
+  $ct_link = variable_get('cleantalk_link', 0);
+  if($ct_link!=0)
+  {
+      $form['terms_of_use'] = array(
+        '#type' => 'item',
+        '#markup' => t("<a href='https://cleantalk.org/drupal-anti-spam-module-wo-captcha'>Drupal spam</a> blocked by CleanTalk."),
+        '#required' => FALSE,
+      );
   }
-
+  
+  
   $js_cookie_added = TRUE;
 
   if ($form_id == 'user_register_form') {
@@ -1636,9 +1845,10 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
       $form['#validate'][] = 'cleantalk_validate_comment';
     }
   }
+  
 
-  drupal_session_start();
-  $_SESSION[$session_time_key] = REQUEST_TIME;
+  //drupal_session_start();
+  //$_SESSION[$session_time_key] = REQUEST_TIME;
 
   $field_name = 'ct_checkjs';
   $ct_check_def = '0';
@@ -1678,6 +1888,10 @@ function _cleantalk_get_checkjs_value() {
  * Cleantalk inner function - performs antispam checking.
  */
 function _cleantalk_check_spam($spam_check) {
+  if(defined('CLEANTALK_SKIP'))
+  {
+    return false;
+  }
   $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_ws = _cleantalk_get_ws();
 
@@ -1714,7 +1928,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-150';
+  $ct_request->agent = 'drupal-201';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -1723,7 +1937,7 @@ function _cleantalk_check_spam($spam_check) {
   $ct_request->sender_ip = ip_address();
 
   $ct_submit_time = NULL;
-  drupal_session_start();
+  //drupal_session_start();
   switch ($spam_check['type']) {
     case 'comment':
     case 'contact':
@@ -1820,7 +2034,7 @@ function _cleantalk_check_spam($spam_check) {
 
       $to = variable_get('site_mail', ini_get('sendmail_from'));
       if (!empty($to)) {
-        drupal_mail($my_module,
+        drupal_mail("cleantalk",
           $timelabels_key,
           $to,
           language_default(),
@@ -1951,6 +2165,151 @@ function cleantalk_get_fields_any(&$email,&$message,&$nickname,&$subject, $arr) 
  */
 
 function cleantalk_boot() {
+  if(isset($_POST['cleantalk_authkey']))
+  {
+    $url = 'http://moderate.cleantalk.org/api2.0';
+	$dt=Array(
+		'auth_key'=>$_POST['cleantalk_authkey'],
+		'method_name'=> 'check_message',
+		'message'=>'This message is a test to check the connection to the CleanTalk servers.',
+		'example'=>null,
+		'agent'=>'drupal-201',
+		'sender_ip'=>$_SERVER['REMOTE_ADDR'],
+		'sender_email'=>'good@cleantalk.org',
+		'sender_nickname'=>'CleanTalk',
+		'js_on'=>1);
+    sendRawRequest($url,$dt,true);
+  }
+  if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1)
+  {
+  	$result = db_query("DROP TABLE IF EXISTS `cleantalk_sfw`;");
+    $result = db_query("CREATE TABLE IF NOT EXISTS `cleantalk_sfw` (
+`network` int(11) unsigned NOT NULL,
+`mask` int(11) unsigned NOT NULL,
+INDEX (  `network` ,  `mask` )
+) ENGINE = MYISAM ;");
+	$data = Array(	'auth_key' => $_POST['cleantalk_authkey'],
+			'method_name' => '2s_blacklists_db'
+ 	);
+		
+	$result=sendRawRequest('https://api.cleantalk.org/2.1',$data,false);
+	$result=json_decode($result, true);
+	if(isset($result['data']))
+	{
+		$result=$result['data'];
+		$query="INSERT INTO `cleantalk_sfw` VALUES ";
+		//$wpdb->query("TRUNCATE TABLE `".$wpdb->base_prefix."cleantalk_sfw`;");
+		for($i=0;$i<sizeof($result);$i++)
+		{
+			if($i==sizeof($result)-1)
+			{
+				$query.="(".$result[$i][0].",".$result[$i][1].");";
+			}
+			else
+			{
+				$query.="(".$result[$i][0].",".$result[$i][1]."), ";
+			}
+		}
+		$result = db_query($query);
+	}
+  }
+  
+  $is_sfw = variable_get('cleantalk_sfw', 0);
+	if($is_sfw==1)
+	{
+		$is_sfw_check=true;
+	   	$ip=CleantalkGetIP();
+	   	$ip=array_unique($ip);
+	   	$key=variable_get('cleantalk_authkey', '');
+	   	//$sfw_log=COption::GetOptionString( 'cleantalk.antispam', 'sfw_log', '' );
+	   	for($i=0;$i<sizeof($ip);$i++)
+		{
+	    	if(isset($_COOKIE['ct_sfw_pass_key']) && $_COOKIE['ct_sfw_pass_key']==md5($ip[$i].$key))
+	    	{
+	    		$is_sfw_check=false;
+	    		if(isset($_COOKIE['ct_sfw_passed']))
+	    		{
+					/*if($sfw_log=='')
+					{
+						$sfw_log=Array();
+						$sfw_log[$ip[$i]]=Array();
+					}
+					else
+					{
+						$sfw_log=json_decode($sfw_log, true);
+					}
+		
+	    			$sfw_log[$ip[$i]]['allow']++;
+	    			COption::SetOptionString( 'cleantalk.antispam', 'sfw_log', json_encode($sfw_log));*/
+	    			@setcookie ('ct_sfw_passed', '0', 1, "/");
+	    		}
+	    	}
+	    }
+		if($is_sfw_check)
+		{
+			$sfw = new CleanTalkSFW();
+			$sfw->cleantalk_get_real_ip();
+			$sfw->check_ip();
+			if($sfw->result)
+			{
+				$sfw->sfw_die();
+			}
+		}
+	}
+  
+  $ct_ccf = variable_get('cleantalk_ccf', 0);
+  if(sizeof($_POST)>0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && $ct_ccf==1) //Custom Contact forms
+  {
+    $sender_email = '';
+    $sender_nickname = '';
+    $subject = '';
+    $message = '';
+    $contact_form = true;
+	get_fields_any($sender_email, $message, $sender_nickname, $subject, $contact_form, $_POST);
+	
+	if($sender_email!='') {
+      $ct_authkey = variable_get('cleantalk_authkey', '');
+      
+      if (!isset($_COOKIE['ct_checkjs'])) {
+        $checkjs = NULL;
+      }
+      elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
+        $checkjs = 1;
+      }
+      else {
+        $checkjs = 0;
+      }
+      
+      $data=Array(
+        'type'=>'comment',
+        'auth_key'=>$ct_authkey,
+        'method_name'=> 'check_message',
+        'message'=>$message,
+        'example'=>null,
+        'agent'=>'drupal-201',
+        'sender_ip'=>$_SERVER['REMOTE_ADDR'],
+        'sender_email'=>$sender_email,
+        'sender_nickname'=>$sender_nickname,
+        'message_title'=>$subject,
+        'message_body'=>'',
+        'example_title'=>'',
+        'example_body'=>'',
+        'example_comments'=>'',
+        'comment_body'=>'',
+        'js_on'=>$checkjs);
+        
+      if(!function_exists('drupal_json_encode')) {
+        include_once DRUPAL_ROOT . '/includes/common.inc';
+      }
+      /*if (!function_exists('libraries_load')) {
+        include_once drupal_get_path('module', 'libraries').'/libraries.module';
+      }*/
+      $result=_cleantalk_check_spam($data);
+      if($result['allow']===0) {
+        drupal_set_message($result['ct_result_comment'],'error');
+      }
+    }
+  }
   if(isset($_POST['mergevars'])) {
     $sender_email = null;
       $message = '';
@@ -1986,7 +2345,7 @@ function cleantalk_boot() {
         'method_name'=> 'check_message',
         'message'=>$message,
         'example'=>null,
-        'agent'=>'drupal-150',
+        'agent'=>'drupal-201',
         'sender_ip'=>$_SERVER['REMOTE_ADDR'],
         'sender_email'=>$sender_email,
         'sender_nickname'=>'',
@@ -1996,14 +2355,14 @@ function cleantalk_boot() {
         'example_body'=>'',
         'example_comments'=>'',
         'comment_body'=>'',
-        'js_on'=>1);
+        'js_on'=>$checkjs);
         
       if(!function_exists('drupal_json_encode')) {
         include_once DRUPAL_ROOT . '/includes/common.inc';
       }
-      if (!function_exists('libraries_load')) {
+      /*if (!function_exists('libraries_load')) {
         include_once drupal_get_path('module', 'libraries').'/libraries.module';
-      }
+      }*/
       $result=_cleantalk_check_spam($data);
       if($result['allow']===0) {
         drupal_set_message($result['ct_result_comment'],'error');
@@ -2037,14 +2396,33 @@ function cleantalk_webform_submission_presave($node, &$submission) {
   $sender_email = null;
     $message = '';
     
-    foreach ($_POST['submitted'] as $key => $value) {
+    /*foreach ($_POST['submitted'] as $key => $value) {
       if ($sender_email === null && !is_array($value) && preg_match("/^\S+@\S+\.\S+$/", $value)) {
             $sender_email = $value;
         }
         else {
           $message.="$value\n";
         }
-    }
+    }*/
+    $messagify = function($array) use (&$messagify, &$sender_email, &$message)
+    { 
+ 		foreach ($array as $key => $value)
+ 		{ 
+			if (is_array($value))
+			{ 
+				$messagify($value); 
+			}
+			else if ($sender_email === null && preg_match("/^\S+@\S+\.\S+$/", $value))
+			{ 
+				$sender_email = $value; 
+			} 
+			else
+			{ 
+				$message.="$value\n"; 
+			} 
+		} 
+	}; 
+	$messagify($_POST['submitted']);
   
   $spam_check = array();
   $spam_check['type'] = 'comment';
@@ -2111,4 +2489,110 @@ function cleantalk_uc_order($op, $order, $arg2) {
       }
     }
   }
+}
+
+function cleantalk_install()
+{
+	$spam_check = array();
+    $spam_check['type'] = 'comment';
+    $spam_check['sender_email'] = 'good@cleantalk.org';
+    $spam_check['sender_nickname'] = 'CleanTalk';
+    $spam_check['message_title'] = '';
+    $spam_check['message_body'] = 'This message is a test to check the connection to the CleanTalk servers.';
+    $spam_check['example_title'] = '';
+    $spam_check['example_body'] = '';
+    $spam_check['example_comments'] = '';
+    
+    if(!function_exists('drupal_json_encode')) {
+		include_once DRUPAL_ROOT . '/includes/common.inc';
+	}
+	/*if (!function_exists('libraries_load')) {
+		include_once drupal_get_path('module', 'libraries').'/libraries.module';
+	}*/
+    
+    $spam_result = _cleantalk_check_spam($spam_check);
+}
+
+/**
+ * Inner function - Finds and returns pattern in string
+ * @return null|bool
+ */
+function get_data_from_submit($value = null, $field_name = null) {
+    if (!$value || !$field_name || !is_string($value)) {
+        return false;
+    }
+    if (preg_match("/[a-z0-9_\-]*" . $field_name. "[a-z0-9_\-]*$/", $value)) {
+        return true;
+    }
+}
+
+/*
+* Get data from submit recursively
+*/
+function get_fields_any(&$email,&$message,&$nickname,&$subject, &$contact,$arr)
+{
+	$skip_params = array(
+	    'ipn_track_id', // PayPal IPN #
+	    'txn_type', // PayPal transaction type
+	    'payment_status', // PayPal payment status
+    );
+	foreach($arr as $key=>$value)
+	{
+		if(!is_array($value)&&!is_object($value))
+		{
+			if (in_array($key, $skip_params) && $key!=0 && $key!='' || preg_match("/^ct_checkjs/", $key)) {
+                $contact = false;
+            }
+			if ($email === '' && preg_match("/^\S+@\S+\.\S+$/", $value))
+	    	{
+	            $email = $value;
+	        }
+	        else if ($nickname === '' && get_data_from_submit($value, 'name'))
+	    	{
+	            $nickname = $value;
+	        }
+	        else if ($subject === '' && get_data_from_submit($value, 'subject'))
+	    	{
+	            $subject = $value;
+	        }
+	        else
+	        {
+	        	$message.="$value\n";
+	        }
+		}
+		else
+		{
+			get_fields_any($email, $message, $nickname, $subject, $contact, $value);
+		}
+	}
+}
+
+function CleantalkGetIP()
+{
+	$result=Array();
+	if ( function_exists( 'apache_request_headers' ) )
+	{
+		$headers = apache_request_headers();
+	}
+	else
+	{
+		$headers = $_SERVER;
+	}
+	if ( array_key_exists( 'X-Forwarded-For', $headers ) )
+	{
+		$the_ip=explode(",", trim($headers['X-Forwarded-For']));
+		$result[] = trim($the_ip[0]);
+	}
+	if ( array_key_exists( 'HTTP_X_FORWARDED_FOR', $headers ))
+	{
+		$the_ip=explode(",", trim($headers['HTTP_X_FORWARDED_FOR']));
+		$result[] = trim($the_ip[0]);
+	}
+	$result[] = filter_var( $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 );
+
+	if(isset($_GET['sfw_test_ip']))
+	{
+		$result[]=$_GET['sfw_test_ip'];
+	}
+	return $result;
 }

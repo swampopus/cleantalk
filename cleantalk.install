@@ -96,6 +96,7 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_automod');
   variable_del('cleantalk_comments');
   variable_del('cleantalk_authkey');
+  variable_del('cleantalk_ccf');
   variable_get('cleantalk_work_url');
   variable_get('cleantalk_server_url');
   variable_get('cleantalk_server_ttl');

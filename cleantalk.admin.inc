@@ -14,6 +14,9 @@ function cleantalk_settings_form($form, &$form_state) {
   $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_comments = variable_get('cleantalk_comments', $ct_comments_default);
   $ct_automod = variable_get('cleantalk_automod', 1);
+  $ct_ccf = variable_get('cleantalk_ccf', 0);
+  $ct_link = variable_get('cleantalk_link', 0);
+  $ct_sfw = variable_get('cleantalk_sfw', 0);
 
   $form['cleantalk_authkey'] = array(
     '#type' => 'textfield',
@@ -47,6 +50,27 @@ function cleantalk_settings_form($form, &$form_state) {
     '<br /><span class="admin-enabled">' .
     t('Note: It overrides "Skip comment approval" permissions') .
     '</span>',
+  );
+  
+  $form['cleantalk_ccf'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable custom contact forms checking'),
+    '#default_value' => $ct_ccf,
+    '#description' => t('Enabling this option will aloow you to check all submissions to your site.'),
+  );
+  
+  $form['cleantalk_sfw'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Spam FireWall'),
+    '#default_value' => $ct_sfw,
+    '#description' => t('This option allows to filter spam bots before they access website. Also reduces CPU usage on hosting server and accelerates pages load time.'),
+  );
+  
+  $form['cleantalk_link'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tell others about CleanTalk'),
+    '#default_value' => $ct_link,
+    '#description' => t('Checking this box places a small link under the comment form that lets others know what anti-spam tool protects your site.'),
   );
 
   return system_settings_form($form);
