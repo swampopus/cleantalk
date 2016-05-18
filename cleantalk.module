@@ -59,55 +59,36 @@ class CleanTalkSFW
 			$this->ip_str_array[]=$the_ip;
 			$this->ip_array[]=sprintf("%u", ip2long($the_ip));
 		}
-		//$this->ip_str=$the_ip;
-		//$this->ip=sprintf("%u", ip2long($the_ip));
-		//print sprintf("%u", ip2long($the_ip));
 	}
 	
 	public function check_ip()
 	{
 		$passed_ip='';
-		for($i=0;$i<sizeof($this->ip_array);$i++)
-		{
-			//$r = $DB->Query("select count(network) as cnt from `cleantalk_sfw` where network = ".$this->ip_array[$i]." & mask;");
+                
+		$r = db_query("SHOW TABLES LIKE 'cleantalk_sfw'");
+                $ob = $r->fetchObject();
+                if(isset($ob) && is_object($ob))
+                {
+                    for($i=0;$i<sizeof($this->ip_array);$i++)
+                    {
 			$r = db_query("select count(network) as cnt from `cleantalk_sfw` where network = ".$this->ip_array[$i]." & mask;");
-    		$cnt = intval($r->fetchObject()->cnt);
-			
-			//$sfw_log=COption::GetOptionString( 'cleantalk.antispam', 'sfw_log', '' );
-			
-			/*if($sfw_log=='')
-			{
-				$sfw_log=Array();
-			}
-			else
-			{
-				$sfw_log=json_decode($sfw_log, true);
-			}*/
-
+                        $cnt = intval($r->fetchObject()->cnt);
 			if($cnt>0)
 			{
 				$this->result=true;
 				$this->blocked_ip=$this->ip_str_array[$i];
-				/*if(isset($sfw_log[$this->ip_str_array[$i]]))
-				{
-					$sfw_log[$this->ip_str_array[$i]]['all']++;
-				}
-				else
-				{
-					$sfw_log[$this->ip_str_array[$i]] = Array('datetime'=>time(), 'all' => 1, 'allow' => 0);
-				}*/
 			}
 			else
 			{
 				$passed_ip = $this->ip_str_array[$i];
 			}
-		}
+                    }
+                }
 		if($passed_ip!='')
 		{
-			$key=variable_get('cleantalk_authkey', '');
+			$key = variable_get('cleantalk_authkey', '');
 			@setcookie ('ct_sfw_pass_key', md5($passed_ip.$key), 0, "/");
 		}
-		//COption::SetOptionString( 'cleantalk.antispam', 'sfw_log', json_encode($sfw_log));
 	}
 	
 	public function sfw_die()
@@ -1602,6 +1583,10 @@ function cleantalk_user_insert(&$edit, $account, $category) {
  * Implements hook_comment_publish().
  */
 function cleantalk_comment_publish($comment) {
+  if (isset($comment->form_id)) {
+      // Not empty form_id means editing but not approving by link
+      return;
+  }
   $result = db_select('cleantalk_cids', 'c')
   ->fields('c', array('ct_request_id', 'ct_result_comment'))
   ->condition('cid', $comment->cid, '=')
@@ -1773,41 +1758,12 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-201';
+  $ct_request->agent = 'drupal-202';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
   $ct->sendFeedback($ct_request);
 }
-
-/**
- * Cleantalk inner function - missing CleanTalk library message for runtime.
- */
-/*function _cleantalk_library_missing_message_4runtime($title, $path) {
-  $t = get_t();
-  return
-    $t(
-      '"Antispam by CleanTalk" module is NOT WORKING' .
-      ' due to missing or broken CleanTalk library.'
-    ) .
-    ' <br />' .
-    $t(
-      'Please download <a target="_blank" href="@url">@title</a>, extract ' .
-      'the archive and copy the contents to the following location:' .
-      '<br /><code>@path</code>.',
-      array(
-        '@url' => 'https://github.com/CleanTalk/php-antispam',
-        '@path' => $path,
-        '@title' => $title,
-      )
-    ) .
-    ' <br />' .
-    $t(
-      'Make sure 2 files <strong>cleantalk.class.php</strong> and ' .
-      '<strong>JSON.php</strong> are located there.'
-    ) .
-    '<br />';
-}*/
 
 /**
  * Cleantalk inner function - alters needed form.
@@ -1845,35 +1801,12 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
       $form['#validate'][] = 'cleantalk_validate_comment';
     }
   }
-  
-
-  //drupal_session_start();
-  //$_SESSION[$session_time_key] = REQUEST_TIME;
 
   $field_name = 'ct_checkjs';
   $ct_check_def = '0';
   if (!isset($_COOKIE[$field_name])) {
     setcookie($field_name, $ct_check_def, 0, '/');
   }
-
-  // We cannot place JS in separate file.
-  // Because it is not static - we have to use generated values.
-/*  $ct_check_value = _cleantalk_get_checkjs_value();
-  $js_template = 'function ctSetCookie(c_name, value, def_value) {
-  document.cookie = c_name + "=" + escape(value.replace(/^def_value$/, value)) + "; path=/";
-}
-setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
-  $js_addon_body = sprintf($js_template, $field_name, $ct_check_value, $ct_check_def);
-  
-  drupal_add_js($js_addon_body,
-    array(
-      'type' => 'inline',
-      'scope' => 'footer',
-      'weight' => 5,
-      'cache' => FALSE,
-      'every_page' => FALSE,
-    )
-  );*/
 }
 
 /**
@@ -1928,7 +1861,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-201';
+  $ct_request->agent = 'drupal-202';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2161,41 +2094,146 @@ function cleantalk_get_fields_any(&$email,&$message,&$nickname,&$subject, $arr) 
 }
 
 /**
- * Implements hook_boot()
+ * Implements hook_init()
  */
 
-function cleantalk_boot() {
-  if(isset($_POST['cleantalk_authkey']))
-  {
-    $url = 'http://moderate.cleantalk.org/api2.0';
-	$dt=Array(
+function cleantalk_init() {
+    $ct_authkey = variable_get('cleantalk_authkey', '');
+    if($ct_authkey != '')
+    {
+        $ct_ccf = variable_get('cleantalk_ccf', 0);
+        if(sizeof($_POST)>0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && $ct_ccf==1) //Custom Contact forms
+        {
+            $sender_email = '';
+            $sender_nickname = '';
+            $subject = '';
+            $message = '';
+            $contact_form = true;
+            get_fields_any($sender_email, $message, $sender_nickname, $subject, $contact_form, $_POST);
+	
+            if($sender_email!='')
+            {
+                if (!isset($_COOKIE['ct_checkjs'])) {
+                    $checkjs = NULL;
+                } elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
+                    $checkjs = 1;
+                } else {
+                    $checkjs = 0;
+                }
+                $data=Array(
+                    'type' => 'comment',
+                    'auth_key' => $ct_authkey,
+                    'method_name' => 'check_message',
+                    'message' => $message,
+                    'example' => null,
+                    'agent'=>'drupal-202',
+                    'sender_ip'=>$_SERVER['REMOTE_ADDR'],
+                    'sender_email'=>$sender_email,
+                    'sender_nickname'=>$sender_nickname,
+                    'message_title'=>$subject,
+                    'message_body'=>'',
+                    'example_title'=>'',
+                    'example_body'=>'',
+                    'example_comments'=>'',
+                    'comment_body'=>'',
+                    'js_on'=>$checkjs
+                );
+                if(!function_exists('drupal_json_encode')) {
+                    include_once DRUPAL_ROOT . '/includes/common.inc';
+                }
+                $result = _cleantalk_check_spam($data);
+                if($result['allow']===0) {
+                    drupal_set_message($result['ct_result_comment'],'error');
+                }
+            }
+        }
+
+        if(isset($_POST['mergevars'])) {
+            $sender_email = null;
+            $message = '';
+      
+            foreach ($_POST['mergevars'] as $key => $value) {
+                if ($sender_email === null && preg_match("/^\S+@\S+\.\S+$/", $value)) {
+                    $sender_email = $value;
+                } else {
+                    $message.="$value\n";
+                }
+            }
+      
+            if($sender_email!=null) {
+                $url = 'http://moderate.cleantalk.org/api2.0';
+                $ct_authkey = variable_get('cleantalk_authkey', '');
+                if (!isset($_COOKIE['ct_checkjs'])) {
+                    $checkjs = NULL;
+                } elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
+                    $checkjs = 1;
+                } else {
+                    $checkjs = 0;
+                }
+                $data=Array(
+                    'type'=>'comment',
+                    'auth_key'=>$ct_authkey,
+                    'method_name'=> 'check_message',
+                    'message'=>$message,
+                    'example'=>null,
+                    'agent'=>'drupal-202',
+                    'sender_ip'=>$_SERVER['REMOTE_ADDR'],
+                    'sender_email'=>$sender_email,
+                    'sender_nickname'=>'',
+                    'message_title'=>'',
+                    'message_body'=>'',
+                    'example_title'=>'',
+                    'example_body'=>'',
+                    'example_comments'=>'',
+                    'comment_body'=>'',
+                    'js_on'=>$checkjs
+                );
+        
+                if(!function_exists('drupal_json_encode')) {
+                    include_once DRUPAL_ROOT . '/includes/common.inc';
+                }
+                $result=_cleantalk_check_spam($data);
+                if($result['allow']===0) {
+                    drupal_set_message($result['ct_result_comment'],'error');
+                    $_POST['mergevars']['EMAIL']='';
+                }
+            }
+        }
+    }
+
+    if (path_is_admin(current_path()))
+    {
+        if(isset($_POST['cleantalk_authkey']))
+        {
+            $url = 'http://moderate.cleantalk.org/api2.0';
+            $dt=Array(
 		'auth_key'=>$_POST['cleantalk_authkey'],
 		'method_name'=> 'check_message',
 		'message'=>'This message is a test to check the connection to the CleanTalk servers.',
 		'example'=>null,
-		'agent'=>'drupal-201',
+		'agent'=>'drupal-202',
 		'sender_ip'=>$_SERVER['REMOTE_ADDR'],
 		'sender_email'=>'good@cleantalk.org',
 		'sender_nickname'=>'CleanTalk',
 		'js_on'=>1);
-    sendRawRequest($url,$dt,true);
-  }
-  if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1)
-  {
-  	$result = db_query("DROP TABLE IF EXISTS `cleantalk_sfw`;");
-    $result = db_query("CREATE TABLE IF NOT EXISTS `cleantalk_sfw` (
+            sendRawRequest($url,$dt,true);
+        }
+        if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1)
+        {
+            $result = db_query("DROP TABLE IF EXISTS `cleantalk_sfw`;");
+            $result = db_query("CREATE TABLE IF NOT EXISTS `cleantalk_sfw` (
 `network` int(11) unsigned NOT NULL,
 `mask` int(11) unsigned NOT NULL,
 INDEX (  `network` ,  `mask` )
 ) ENGINE = MYISAM ;");
-	$data = Array(	'auth_key' => $_POST['cleantalk_authkey'],
+            $data = Array(	'auth_key' => $_POST['cleantalk_authkey'],
 			'method_name' => '2s_blacklists_db'
- 	);
+            );
 		
-	$result=sendRawRequest('https://api.cleantalk.org/2.1',$data,false);
-	$result=json_decode($result, true);
-	if(isset($result['data']))
-	{
+            $result=sendRawRequest('https://api.cleantalk.org/2.1',$data,false);
+            $result=json_decode($result, true);
+            if(isset($result['data']))
+            {
 		$result=$result['data'];
 		$query="INSERT INTO `cleantalk_sfw` VALUES ";
 		//$wpdb->query("TRUNCATE TABLE `".$wpdb->base_prefix."cleantalk_sfw`;");
@@ -2211,165 +2249,48 @@ INDEX (  `network` ,  `mask` )
 			}
 		}
 		$result = db_query($query);
-	}
-  }
-  
-  $is_sfw = variable_get('cleantalk_sfw', 0);
-	if($is_sfw==1)
-	{
-		$is_sfw_check=true;
-	   	$ip=CleantalkGetIP();
-	   	$ip=array_unique($ip);
-	   	$key=variable_get('cleantalk_authkey', '');
-	   	//$sfw_log=COption::GetOptionString( 'cleantalk.antispam', 'sfw_log', '' );
-	   	for($i=0;$i<sizeof($ip);$i++)
-		{
+            }
+        }
+    }
+}
+
+/**
+ * Implements hook_boot()
+ */
+
+function cleantalk_boot() {
+    $is_sfw = variable_get('cleantalk_sfw', 0);
+    if($is_sfw == 1)
+    {
+        $key = variable_get('cleantalk_authkey', '');
+        if($key != '')
+        {
+            $is_sfw_check = true;
+            $ip = CleantalkGetIP();
+            $ip = array_unique($ip);
+            for($i=0;$i<sizeof($ip);$i++)
+            {
 	    	if(isset($_COOKIE['ct_sfw_pass_key']) && $_COOKIE['ct_sfw_pass_key']==md5($ip[$i].$key))
 	    	{
-	    		$is_sfw_check=false;
-	    		if(isset($_COOKIE['ct_sfw_passed']))
-	    		{
-					/*if($sfw_log=='')
-					{
-						$sfw_log=Array();
-						$sfw_log[$ip[$i]]=Array();
-					}
-					else
-					{
-						$sfw_log=json_decode($sfw_log, true);
-					}
-		
-	    			$sfw_log[$ip[$i]]['allow']++;
-	    			COption::SetOptionString( 'cleantalk.antispam', 'sfw_log', json_encode($sfw_log));*/
-	    			@setcookie ('ct_sfw_passed', '0', 1, "/");
-	    		}
+                    $is_sfw_check=false;
+                    if(isset($_COOKIE['ct_sfw_passed']))
+                    {
+	    		@setcookie ('ct_sfw_passed', '0', 1, "/");
+                    }
 	    	}
 	    }
-		if($is_sfw_check)
+            if($is_sfw_check)
+            {
+		$sfw = new CleanTalkSFW();
+		$sfw->cleantalk_get_real_ip();
+		$sfw->check_ip();
+		if($sfw->result)
 		{
-			$sfw = new CleanTalkSFW();
-			$sfw->cleantalk_get_real_ip();
-			$sfw->check_ip();
-			if($sfw->result)
-			{
-				$sfw->sfw_die();
-			}
+                    $sfw->sfw_die();
 		}
-	}
-  
-  $ct_ccf = variable_get('cleantalk_ccf', 0);
-  if(sizeof($_POST)>0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && $ct_ccf==1) //Custom Contact forms
-  {
-    $sender_email = '';
-    $sender_nickname = '';
-    $subject = '';
-    $message = '';
-    $contact_form = true;
-	get_fields_any($sender_email, $message, $sender_nickname, $subject, $contact_form, $_POST);
-	
-	if($sender_email!='') {
-      $ct_authkey = variable_get('cleantalk_authkey', '');
-      
-      if (!isset($_COOKIE['ct_checkjs'])) {
-        $checkjs = NULL;
-      }
-      elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
-        $checkjs = 1;
-      }
-      else {
-        $checkjs = 0;
-      }
-      
-      $data=Array(
-        'type'=>'comment',
-        'auth_key'=>$ct_authkey,
-        'method_name'=> 'check_message',
-        'message'=>$message,
-        'example'=>null,
-        'agent'=>'drupal-201',
-        'sender_ip'=>$_SERVER['REMOTE_ADDR'],
-        'sender_email'=>$sender_email,
-        'sender_nickname'=>$sender_nickname,
-        'message_title'=>$subject,
-        'message_body'=>'',
-        'example_title'=>'',
-        'example_body'=>'',
-        'example_comments'=>'',
-        'comment_body'=>'',
-        'js_on'=>$checkjs);
-        
-      if(!function_exists('drupal_json_encode')) {
-        include_once DRUPAL_ROOT . '/includes/common.inc';
-      }
-      /*if (!function_exists('libraries_load')) {
-        include_once drupal_get_path('module', 'libraries').'/libraries.module';
-      }*/
-      $result=_cleantalk_check_spam($data);
-      if($result['allow']===0) {
-        drupal_set_message($result['ct_result_comment'],'error');
-      }
+            }
+        }
     }
-  }
-  if(isset($_POST['mergevars'])) {
-    $sender_email = null;
-      $message = '';
-      
-      foreach ($_POST['mergevars'] as $key => $value) {
-        if ($sender_email === null && preg_match("/^\S+@\S+\.\S+$/", $value)) {
-              $sender_email = $value;
-          }
-          else {
-            $message.="$value\n";
-          }
-      }
-      
-      if($sender_email!=null) {
-    
-      $url = 'http://moderate.cleantalk.org/api2.0';
-      
-      $ct_authkey = variable_get('cleantalk_authkey', '');
-      
-      if (!isset($_COOKIE['ct_checkjs'])) {
-        $checkjs = NULL;
-      }
-      elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
-        $checkjs = 1;
-      }
-      else {
-        $checkjs = 0;
-      }
-      
-      $data=Array(
-        'type'=>'comment',
-        'auth_key'=>$ct_authkey,
-        'method_name'=> 'check_message',
-        'message'=>$message,
-        'example'=>null,
-        'agent'=>'drupal-201',
-        'sender_ip'=>$_SERVER['REMOTE_ADDR'],
-        'sender_email'=>$sender_email,
-        'sender_nickname'=>'',
-        'message_title'=>'',
-        'message_body'=>'',
-        'example_title'=>'',
-        'example_body'=>'',
-        'example_comments'=>'',
-        'comment_body'=>'',
-        'js_on'=>$checkjs);
-        
-      if(!function_exists('drupal_json_encode')) {
-        include_once DRUPAL_ROOT . '/includes/common.inc';
-      }
-      /*if (!function_exists('libraries_load')) {
-        include_once drupal_get_path('module', 'libraries').'/libraries.module';
-      }*/
-      $result=_cleantalk_check_spam($data);
-      if($result['allow']===0) {
-        drupal_set_message($result['ct_result_comment'],'error');
-        $_POST['mergevars']['EMAIL']='';
-      }
-    }
-  }
 }
 
 /**
@@ -2396,14 +2317,6 @@ function cleantalk_webform_submission_presave($node, &$submission) {
   $sender_email = null;
     $message = '';
     
-    /*foreach ($_POST['submitted'] as $key => $value) {
-      if ($sender_email === null && !is_array($value) && preg_match("/^\S+@\S+\.\S+$/", $value)) {
-            $sender_email = $value;
-        }
-        else {
-          $message.="$value\n";
-        }
-    }*/
     $messagify = function($array) use (&$messagify, &$sender_email, &$message)
     { 
  		foreach ($array as $key => $value)
@@ -2493,7 +2406,13 @@ function cleantalk_uc_order($op, $order, $arg2) {
 
 function cleantalk_install()
 {
-	$spam_check = array();
+    $result = db_query("CREATE TABLE IF NOT EXISTS `cleantalk_sfw` (
+`network` int(11) unsigned NOT NULL,
+`mask` int(11) unsigned NOT NULL,
+INDEX (  `network` ,  `mask` )
+) ENGINE = MYISAM ;");
+
+    $spam_check = array();
     $spam_check['type'] = 'comment';
     $spam_check['sender_email'] = 'good@cleantalk.org';
     $spam_check['sender_nickname'] = 'CleanTalk';
