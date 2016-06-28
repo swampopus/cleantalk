@@ -1415,16 +1415,12 @@ function cleantalk_validate_comment(&$form, &$form_state) {
   global $user;
   // Don't check reged user with >= 'cleantalk_comments' approved msgs.
   if ($user->uid > 0) {
-
-    $result = db_query(
-      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
-      array(':uid' => $user->uid)
-    );
-    $count = intval($result->fetchObject()->count);
-
-    $ct_comments = variable_get('cleantalk_comments', 3);
-    if ($count >= $ct_comments) {
-      return;
+    
+    # Don't check admin activity
+    if (isset($user->roles) && is_array($user->roles)) {
+        if (in_array('administrator', $user->roles)) {
+            return;
+        }
     }
   }
 
@@ -1432,30 +1428,56 @@ function cleantalk_validate_comment(&$form, &$form_state) {
 
   $base_form_id = $form_state['build_info']['base_form_id'];
   if ($base_form_id == 'comment_form') {
-    $spam_check['type'] = 'comment';
+    if (
+        isset($form_state['values']) && is_array($form_state['values']) &&
+        isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) &&
+        isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) &&
+        isset($form_state['values']['comment_body'][$comment_lang][0])
+    ) {
+        $spam_check['type'] = 'comment';
     
-    $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-    $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+        $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
 
-    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-    $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
-    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+        $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+        $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+        $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+        $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+    }
   } else if ($base_form_id == 'node_form') {
-    $spam_check['type'] = 'comment';
+      if (
+        isset($form_state['values']) && is_array($form_state['values']) &&
+        isset($form_state['values']['body']) && is_array($form_state['values']['body']) &&
+        isset($form_state['values']['body'][$comment_lang]) && is_array($form_state['values']['body'][$comment_lang]) &&
+        isset($form_state['values']['body'][$comment_lang][0])
+      ) {
+        $spam_check['type'] = 'comment';
 
-    $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-    $comment_body = $form_state['values']['body'][$comment_lang][0];
+        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+        $comment_body = $form_state['values']['body'][$comment_lang][0];
 
-    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-    $spam_check['message_title'] = !empty($form_state['values']['title']) ? $form_state['values']['title'] : '';
-    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
-      
+        $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+        $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+        $spam_check['message_title'] = !empty($form_state['values']['title']) ? $form_state['values']['title'] : '';
+        $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+      }
   }
   
   if (empty($spam_check)) {
       return;
+  } else {
+    if ($user->uid > 0) {
+        $result = db_query(
+            'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+            array(':uid' => $user->uid)
+        );
+        $count = intval($result->fetchObject()->count);
+
+        $ct_comments = variable_get('cleantalk_comments', 3);
+        if ($count >= $ct_comments) {
+            return;
+        }
+    }
   }
   
   $spam_result = _cleantalk_check_spam($spam_check);
@@ -1477,6 +1499,13 @@ function cleantalk_validate_contact_message(&$form, &$form_state) {
   global $user;
   // Don't check reged user with >= 'cleantalk_comments' approved msgs.
   if ($user->uid > 0) {
+
+    # Don't check admin activity
+    if (isset($user->roles) && is_array($user->roles)) {
+        if (in_array('administrator', $user->roles)) {
+            return;
+        }
+    }
 
     $result = db_query(
       'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
@@ -1758,7 +1787,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-202';
+  $ct_request->agent = 'drupal-203';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1861,7 +1890,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-202';
+  $ct_request->agent = 'drupal-203';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -1909,6 +1938,11 @@ function _cleantalk_check_spam($spam_check) {
       $timelabels_key = 'mail_error_reg';
       $ct_request->submit_time = $ct_submit_time;
       $ct_request->tz = $spam_check['timezone'];
+
+      // Set JS test enabled if REST API request
+      if (arg(0) != 'user') {
+        $ct_request->js_on = 1;
+      }
 
       $ct_result = $ct->isAllowUser($ct_request);
       break;
@@ -2126,7 +2160,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-202',
+                    'agent'=>'drupal-203',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2176,7 +2210,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-202',
+                    'agent'=>'drupal-203',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2211,7 +2245,7 @@ function cleantalk_init() {
 		'method_name'=> 'check_message',
 		'message'=>'This message is a test to check the connection to the CleanTalk servers.',
 		'example'=>null,
-		'agent'=>'drupal-202',
+		'agent'=>'drupal-203',
 		'sender_ip'=>$_SERVER['REMOTE_ADDR'],
 		'sender_email'=>'good@cleantalk.org',
 		'sender_nickname'=>'CleanTalk',
@@ -2297,11 +2331,18 @@ function cleantalk_boot() {
  * Implements hook_webform_submission_presave()
  */
 
-function cleantalk_webform_submission_presave($node, &$submission) {
+function cleantalk_webform_submission_presave(&$node, &$submission) {
   global $user;
   // Don't check reged user with >= 'cleantalk_comments' approved msgs.
   if ($user->uid > 0) {
-  
+
+    # Don't check admin activity
+    if (isset($user->roles) && is_array($user->roles)) {
+        if (in_array('administrator', $user->roles)) {
+            return;
+        }
+    }
+
     $result = db_query(
       'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
       array(':uid' => $user->uid)
@@ -2349,16 +2390,16 @@ function cleantalk_webform_submission_presave($node, &$submission) {
   
   $spam_result = _cleantalk_check_spam($spam_check);
   if (isset($spam_result)
-  && is_array($spam_result)
-  && $spam_result['errno'] == 0
-  && $spam_result['allow'] != 1
-  && $spam_result['stop_queue'] == 1
+    && is_array($spam_result)
+    && $spam_result['errno'] == 0
+    && $spam_result['allow'] != 1
   ) {
-    $ct_automod = variable_get('cleantalk_automod', 1);
-    if ($ct_automod == 1) {
-      $submission->is_draft=empty($spam_result['ct_result_comment']) ? 0 : 1;
-    }
-    drupal_set_message($spam_result['ct_result_comment'],'error');
+      $ct_automod = variable_get('cleantalk_automod', 1);
+      if ($spam_result['stop_queue'] == 1 || $ct_automod == 1) {
+        $submission->is_draft = 1;
+        $node->webform['emails'] = array();
+        drupal_set_message($spam_result['ct_result_comment'],'error');
+      }
   }
 }
 
