@@ -14,7 +14,7 @@ function cleantalk_schema() {
     'fields' => array(
       'ct_key' => array(
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 64,
         'not null' => TRUE,
         'default' => '',
         'description' => 'Notification ID.',
@@ -43,7 +43,7 @@ function cleantalk_schema() {
       ),
       'ct_request_id' => array(
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 32,
         'not null' => TRUE,
         'default' => '',
         'description' => 'CleanTalk request ID for comment.',
@@ -71,7 +71,7 @@ function cleantalk_schema() {
       ),
       'ct_request_id' => array(
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 32,
         'not null' => TRUE,
         'default' => '',
         'description' => 'CleanTalk request ID for user registration.',

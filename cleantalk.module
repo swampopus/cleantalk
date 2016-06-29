@@ -1426,41 +1426,40 @@ function cleantalk_validate_comment(&$form, &$form_state) {
 
   $spam_check = array();
 
-  $base_form_id = $form_state['build_info']['base_form_id'];
-  if ($base_form_id == 'comment_form') {
-    if (
-        isset($form_state['values']) && is_array($form_state['values']) &&
-        isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) &&
-        isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) &&
-        isset($form_state['values']['comment_body'][$comment_lang][0])
-    ) {
-        $spam_check['type'] = 'comment';
-    
-        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-        $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+  if (isset($form_state['values']) && is_array($form_state['values'])) {
+    $base_form_id = $form_state['build_info']['base_form_id'];
 
-        $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-        $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-        $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
-        $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+    if ($base_form_id == 'comment_form') {
+	$comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+	if (
+    	    isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) &&
+    	    isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) &&
+    	    isset($form_state['values']['comment_body'][$comment_lang][0])
+	) {
+    	    $spam_check['type'] = 'comment';
+    	    $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+
+    	    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+    	    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+    	    $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+    	    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+	}
+    } else if ($base_form_id == 'node_form') {
+        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+        if (
+    	    isset($form_state['values']['body']) && is_array($form_state['values']['body']) &&
+    	    isset($form_state['values']['body'][$comment_lang]) && is_array($form_state['values']['body'][$comment_lang]) &&
+    	    isset($form_state['values']['body'][$comment_lang][0])
+        ) {
+    	    $spam_check['type'] = 'comment';
+    	    $comment_body = $form_state['values']['body'][$comment_lang][0];
+
+    	    $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+    	    $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+    	    $spam_check['message_title'] = !empty($form_state['values']['title']) ? $form_state['values']['title'] : '';
+    	    $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
+        }
     }
-  } else if ($base_form_id == 'node_form') {
-      if (
-        isset($form_state['values']) && is_array($form_state['values']) &&
-        isset($form_state['values']['body']) && is_array($form_state['values']['body']) &&
-        isset($form_state['values']['body'][$comment_lang]) && is_array($form_state['values']['body'][$comment_lang]) &&
-        isset($form_state['values']['body'][$comment_lang][0])
-      ) {
-        $spam_check['type'] = 'comment';
-
-        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-        $comment_body = $form_state['values']['body'][$comment_lang][0];
-
-        $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-        $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-        $spam_check['message_title'] = !empty($form_state['values']['title']) ? $form_state['values']['title'] : '';
-        $spam_check['message_body'] = isset($comment_body['value']) ? $comment_body['value'] : '';
-      }
   }
   
   if (empty($spam_check)) {
