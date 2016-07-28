@@ -17,6 +17,8 @@ function cleantalk_settings_form($form, &$form_state) {
   $ct_ccf = variable_get('cleantalk_ccf', 0);
   $ct_link = variable_get('cleantalk_link', 0);
   $ct_sfw = variable_get('cleantalk_sfw', 0);
+  $ct_wf_silent = variable_get('cleantalk_wf_silent', 0);
+  $ct_wf_nomail = variable_get('cleantalk_wf_nomail', 0);
 
   $form['cleantalk_authkey'] = array(
     '#type' => 'textfield',
@@ -71,6 +73,20 @@ function cleantalk_settings_form($form, &$form_state) {
     '#title' => t('Tell others about CleanTalk'),
     '#default_value' => $ct_link,
     '#description' => t('Checking this box places a small link under the comment form that lets others know what anti-spam tool protects your site.'),
+  );
+
+  $form['cleantalk_wf_silent'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('WebForm - no moderation messages for visitors'),
+    '#default_value' => $ct_wf_silent,
+    '#description' => t('Don\'t display messages from CleanTalk moderation servers for WebForm submits.'),
+  );
+
+  $form['cleantalk_wf_nomail'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('WebForm - no spam notification emails'),
+    '#default_value' => $ct_wf_nomail,
+    '#description' => t('Don\'t send WebForm submission notification emails if spam.'),
   );
 
   return system_settings_form($form);
