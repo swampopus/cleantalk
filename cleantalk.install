@@ -2,14 +2,15 @@
 
 /**
  * @file
- * Install and uninstall functions, schema definition for the CleanTalk module.
+ * Install and uninstall functions for the CleanTalk module.
  */
 
 /**
- * Implements hook_schema().
+ * Implements hook_install().
  */
-function cleantalk_schema() {
-  $schema['cleantalk_timelabels'] = array(
+function cleantalk_install() {
+  db_drop_table('cleantalk_timelabels');
+  $cleantalk_timelabels = array(
     'description' => 'Timelabels for admin notification sending.',
     'fields' => array(
       'ct_key' => array(
@@ -30,7 +31,10 @@ function cleantalk_schema() {
     ),
     'primary key' => array('ct_key'),
   );
-  $schema['cleantalk_cids'] = array(
+  db_create_table('cleantalk_timelabels', $cleantalk_timelabels);
+
+  db_drop_table('cleantalk_cids');
+  $cleantalk_cids = array(
     'description' => 'Comment checking results - CIDs and server responces.',
     'fields' => array(
       'cid' => array(
@@ -58,7 +62,10 @@ function cleantalk_schema() {
     ),
     'primary key' => array('cid'),
   );
-  $schema['cleantalk_uids'] = array(
+  db_create_table('cleantalk_cids', $cleantalk_cids);
+
+  db_drop_table('cleantalk_uids');
+  $cleantalk_uids = array(
     'description' => 'New user checking results - UIDs and server responces.',
     'fields' => array(
       'uid' => array(
@@ -86,13 +93,54 @@ function cleantalk_schema() {
     ),
     'primary key' => array('uid'),
   );
-  return $schema;
-}
+  db_create_table('cleantalk_uids', $cleantalk_uids);
 
+  db_drop_table('cleantalk_sfw');
+  $cleantalk_sfw = array(
+    'description' => 'SpamFireWall data.',
+    'fields' => array(
+      'network' => array(
+        'type' => 'int',
+        'length' => 11,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Spam network.',
+      ),
+      'mask' => array(
+        'type' => 'int',
+        'length' => 11,
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Spam mask.',
+      ),
+    ),
+    'primary key' => array('network', 'mask'),
+  );
+  db_create_table('cleantalk_sfw', $cleantalk_sfw);
+
+  $myRoles = array('spammer');
+  $roles = user_roles();
+  $myRole = new stdClass();
+  foreach ($myRoles as $r){
+    if(!in_array($r, $roles)){
+      $myRole->name = $r;
+      user_role_save($myRole);
+    }
+  }
+}
 /**
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
+  $myRoles = array('spammer');
+  $roles = user_roles();
+  foreach ($myRoles as $r){
+    if(in_array($r, $roles)){
+      user_role_delete($r);
+    }
+  }
   variable_del('cleantalk_automod');
   variable_del('cleantalk_comments');
   variable_del('cleantalk_authkey');
@@ -101,6 +149,10 @@ function cleantalk_uninstall() {
   variable_get('cleantalk_server_url');
   variable_get('cleantalk_server_ttl');
   variable_get('cleantalk_server_changed');
+  db_drop_table('cleantalk_timelabels');
+  db_drop_table('cleantalk_cids');
+  db_drop_table('cleantalk_uids');
+  db_drop_table('cleantalk_sfw');
 }
 
 /**
