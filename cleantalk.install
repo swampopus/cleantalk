@@ -9,6 +9,10 @@
  * Implements hook_install().
  */
 function cleantalk_install() {
+	
+   variable_set('ct_sfw_last_logs_sent', time());
+   variable_set('ct_sfw_last_updated', time());
+	
   db_drop_table('cleantalk_timelabels');
   $cleantalk_timelabels = array(
     'description' => 'Timelabels for admin notification sending.',
@@ -119,6 +123,34 @@ function cleantalk_install() {
     'primary key' => array('network', 'mask'),
   );
   db_create_table('cleantalk_sfw', $cleantalk_sfw);
+  
+  db_drop_table('cleantalk_sfw_logs');
+    $cleantalk_sfw_logs = array(
+    'description' => 'Comment checking results - CIDs and server responces.',
+    'fields' => array(
+      'ip' => array(
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'IP.'
+      ),
+      'all' => array(
+        'type' => 'int',
+        'description' => 'All entries.'
+      ),
+	  'blocked' => array(
+        'type' => 'int',
+        'description' => 'Blocked entries.'
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'description' => 'time().'
+      )
+    ),
+    'primary key' => array('ip'),
+  );
+  db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
 
   $myRoles = array('spammer');
   $roles = user_roles();
@@ -149,10 +181,14 @@ function cleantalk_uninstall() {
   variable_get('cleantalk_server_url');
   variable_get('cleantalk_server_ttl');
   variable_get('cleantalk_server_changed');
+  variable_del('ct_sfw_last_logs_sent');
+  variable_del('ct_sfw_last_updated');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_cids');
   db_drop_table('cleantalk_uids');
   db_drop_table('cleantalk_sfw');
+  db_drop_table('cleantalk_sfw_logs');
+  
 }
 
 /**
