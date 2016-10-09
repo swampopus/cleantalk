@@ -230,6 +230,38 @@ function cleantalk_uninstall() {
   return $requirements;
 }*/
 
+//First hook update for drupal version 7 module version 2 update number 00
+function cleantalk_update_7200{
+	variable_set('ct_sfw_last_logs_sent', time());
+	db_drop_table('cleantalk_sfw_logs');
+	$cleantalk_sfw_logs = array(
+		'description' => 'Comment checking results - CIDs and server responces.',
+		'fields' => array(
+			'ip' => array(
+				'type' => 'varchar',
+				'length' => 15,
+				'not null' => TRUE,
+				'default' => '',
+				'description' => 'IP.'
+			),
+			'all' => array(
+				'type' => 'int',
+				'description' => 'All entries.'
+			),
+			'blocked' => array(
+				'type' => 'int',
+				'description' => 'Blocked entries.'
+			),
+			'timestamp' => array(
+				'type' => 'int',
+				'description' => 'time().'
+			)
+		),
+		'primary key' => array('ip'),
+	);
+	db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
+}
+
 /**
  * Cleantalk inner function - missing CleanTalk library message for install.
  */
