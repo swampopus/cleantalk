@@ -230,8 +230,10 @@ function cleantalk_uninstall() {
   return $requirements;
 }*/
 
-//First hook update for drupal version 7 module version 2 update number 00
-function cleantalk_update_7200{
+/**
+ * Add new table for SpamFireWall logs
+ */
+function cleantalk_update_7200(&$sandbox = NULL){
 	variable_set('ct_sfw_last_logs_sent', time());
 	db_drop_table('cleantalk_sfw_logs');
 	$cleantalk_sfw_logs = array(
@@ -260,6 +262,8 @@ function cleantalk_update_7200{
 		'primary key' => array('ip'),
 	);
 	db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
+	
+	return '* New table for SpamFireWall logs added.';
 }
 
 /**
