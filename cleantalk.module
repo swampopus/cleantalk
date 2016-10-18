@@ -63,13 +63,12 @@ class CleanTalkSFW
 	}
 	
 	public function check_ip()
-	{
-		$n=1;
-		$r = db_query("SHOW TABLES LIKE 'cleantalk_sfw'");
+	{				
+		$r = db_query("SHOW TABLES LIKE '{cleantalk_sfw}'");
 		$ob = $r->fetchObject();
 		if(isset($ob) && is_object($ob)){
 			for($i=0;$i<sizeof($this->ip_array);$i++){
-				$r = db_query("select count(network) as cnt from `cleantalk_sfw` where network = ".$this->ip_array[$i]." & mask;");
+				$r = db_query("select count(network) as cnt from `{cleantalk_sfw}` where network = ".$this->ip_array[$i]." & mask;");
 					$cnt = intval($r->fetchObject()->cnt);
 				if($cnt>0)
 				{
@@ -115,7 +114,7 @@ class CleanTalkSFW
 				db_truncate('cleantalk_sfw')->execute();
 				
 				$result=$result['data'];
-				$query="INSERT INTO `cleantalk_sfw` VALUES ";
+				$query="INSERT INTO `{cleantalk_sfw}` VALUES ";
 				for($i=0;$i<sizeof($result);$i++){
 					if($i==sizeof($result)-1){
 						$query.="(".$result[$i][0].",".$result[$i][1].");";
@@ -139,7 +138,7 @@ class CleanTalkSFW
 		$blocked = ($result == 'blocked' ? ' + 1' : '');
 		$time = time();
 
-		$query = "INSERT INTO `cleantalk_sfw_logs`
+		$query = "INSERT INTO `{cleantalk_sfw_logs}`
 		SET 
 			`ip` = '$ip',
 			`all` = 1,
@@ -158,7 +157,7 @@ class CleanTalkSFW
 	public static function send_logs($ct_key){
 		
 		//Getting logs
-		$tmp = db_query("SELECT * FROM `cleantalk_sfw_logs`");
+		$tmp = db_query("SELECT * FROM `{cleantalk_sfw_logs}`");
 		$result = $tmp->fetchAll(PDO::FETCH_ASSOC);
 				
 		if(!empty($result)){
@@ -182,7 +181,7 @@ class CleanTalkSFW
 			//Checking answer and truncate table, reset counter
 			if(isset($result->data) && isset($result->data->rows))
 				if($result->data->rows == count($data)){
-					db_query("TRUNCATE TABLE `cleantalk_sfw_logs`");
+					db_query("TRUNCATE TABLE `{cleantalk_sfw_logs}`");
 					variable_set('ct_sfw_last_logs_sent', time());
 				}
 		}
@@ -1851,7 +1850,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-301';
+  $ct_request->agent = 'drupal-310';
   $ct_request->sender_ip = ip_address();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1965,7 +1964,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-301';
+  $ct_request->agent = 'drupal-310';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2245,7 +2244,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-301',
+                    'agent'=>'drupal-310',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2295,7 +2294,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-301',
+                    'agent'=>'drupal-310',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2323,7 +2322,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-301');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-310');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
