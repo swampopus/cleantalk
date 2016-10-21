@@ -4,9 +4,9 @@ configure = admin/config/cleantalk
 core = 7.x
 ; dependencies[] = libraries
 
-; Information added by Drupal.org packaging script on 2016-10-19
-version = "7.x-3.1"
+; Information added by Drupal.org packaging script on 2016-10-21
+version = "7.x-3.2"
 core = "7.x"
 project = "cleantalk"
-datestamp = "1476835200"
+datestamp = "1477008000"
 
