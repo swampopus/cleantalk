@@ -301,43 +301,6 @@ function cleantalk_update_7301(&$sandbox = NULL){
 	
 	return '* New table for SpamFireWall logs added.';
 }
-
-/**
- * Compatibilty changes for SpamFireWall logs table
- */
-function cleantalk_update_7334(&$sandbox = NULL){
-  error_log("update was done");
-  variable_set('ct_sfw_last_logs_sent', time());
-  db_drop_table('cleantalk_sfw_logs');
-  $cleantalk_sfw_logs = array(
-    'description' => 'Comment checking results - CIDs and server responces.',
-    'fields' => array(
-      'ip' => array(
-        'type' => 'varchar',
-        'length' => 15,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'IP.'
-      ),
-      'all_entries' => array(
-        'type' => 'int',
-        'description' => 'All entries.'
-      ),
-      'blocked_entries' => array(
-        'type' => 'int',
-        'description' => 'Blocked entries.'
-      ),
-      'entries_timestamp' => array(
-        'type' => 'int',
-        'description' => 'time().'
-      )
-    ),
-    'primary key' => array('ip'),
-  );
-  db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
-  
-  return '* New table for SpamFireWall logs added.';
-}
 /**
  * Cleantalk inner function - missing CleanTalk library message for install.
  */
