@@ -2029,7 +2029,7 @@ function _cleantalk_check_spam($spam_check) {
       }
       $timelabels_key = 'mail_error_reg';
       $ct_request->submit_time = $ct_submit_time;
-      $ct_request->tz = !empty($spam_check['timezone']) ? $spam_check['timezone'] : '';
+      $ct_request->tz = (!empty($spam_check['timezone']) ? $spam_check['timezone'] : '');
 
       // Set JS test enabled if REST API request
       if (arg(0) != 'user') {
