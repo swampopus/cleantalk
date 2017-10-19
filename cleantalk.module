@@ -1278,28 +1278,34 @@ if( !function_exists('apache_request_headers') ) {
 
 function cleantalk_get_real_ip()
 {
-	if ( function_exists( 'apache_request_headers' ) )
-	{
-		$headers = apache_request_headers();
-	}
-	else
-	{
-		$headers = $_SERVER;
-	}
-	if ( array_key_exists( 'X-Forwarded-For', $headers ) && filter_var( $headers['X-Forwarded-For'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) )
-	{
-		$the_ip = $headers['X-Forwarded-For'];
-	}
-	elseif ( array_key_exists( 'HTTP_X_FORWARDED_FOR', $headers ) && filter_var( $headers['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ))
-	{
-		$the_ip = $headers['HTTP_X_FORWARDED_FOR'];
-	}
-	else
-	{
-		$the_ip = filter_var( $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 );
-	}
-	return $the_ip;
+  // Getting headers
+  $headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
+
+  // Getting IP for validating
+  if (array_key_exists( 'X-Forwarded-For', $headers )){
+    $ip = explode(",", trim($headers['X-Forwarded-For']));
+    $ip = trim($ip[0]);
+  }elseif(array_key_exists( 'HTTP_X_FORWARDED_FOR', $headers)){
+    $ip = explode(",", trim($headers['HTTP_X_FORWARDED_FOR']));
+    $ip = trim($ip[0]);
+  }else{
+    $ip = $_SERVER['REMOTE_ADDR'];
+  }
+
+    // Validating IP
+    // IPv4
+  if(filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)){
+    $the_ip = $ip;
+    // IPv6
+  }elseif(filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)){
+    $the_ip = $ip;
+    // Unknown
+  }else{
+    $the_ip = null;
+  }
+    return $the_ip;
 }
+
 
 /*
 *
@@ -1853,8 +1859,8 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-336';
-  $ct_request->sender_ip = ip_address();
+  $ct_request->agent = 'drupal-337';
+  $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
   $ct->sendFeedback($ct_request);
@@ -1972,13 +1978,13 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-336';
+  $ct_request->agent = 'drupal-337';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
   $ct_request->sender_email = $spam_check['sender_email'];
   $ct_request->sender_nickname = $spam_check['sender_nickname'];
-  $ct_request->sender_ip = ip_address();
+  $ct_request->sender_ip = cleantalk_get_real_ip();
 
   $ct_submit_time = NULL;
   //drupal_session_start();
@@ -1994,7 +2000,7 @@ function _cleantalk_check_spam($spam_check) {
 
       $ct_request->submit_time = $ct_submit_time;
       $ct_request->message = $spam_check['message_title'] . " \n\n" .
-        $spam_check['message_body'];
+       preg_replace('/\s+/', ' ',str_replace("<br />", " ", $spam_check['message_body']));
 
       // Additional info.
       $post_info = '';
@@ -2252,7 +2258,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-336',
+                    'agent'=>'drupal-337',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2302,7 +2308,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-336',
+                    'agent'=>'drupal-337',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2330,7 +2336,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-336');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-337');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
@@ -2650,7 +2656,7 @@ function cleantalk_find_spammers(&$form, &$form_state) {
 	$data=implode(',',$data);
 
         $request=Array();
-        $request['method_name'] = 'spam_check';
+        $request['method_name'] = 'spam_check_cms';
         $request['auth_key'] = $ct_authkey;
         $request['data'] = $data;
         $url='https://api.cleantalk.org';
