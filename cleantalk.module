@@ -1320,8 +1320,7 @@ function cleantalk_page_build(&$page) {
   
   if($_SERVER['REQUEST_METHOD']=='GET')
   {
-  	$_SESSION['ct_submit_comment_time'] = REQUEST_TIME;
-  	$_SESSION['ct_submit_register_time'] = REQUEST_TIME;
+  	apbct_cookie();
   }
   
   $ct_check_def = '0';
@@ -1859,7 +1858,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-337';
+  $ct_request->agent = 'drupal-338';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1978,7 +1977,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-337';
+  $ct_request->agent = 'drupal-338';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -1986,16 +1985,13 @@ function _cleantalk_check_spam($spam_check) {
   $ct_request->sender_nickname = $spam_check['sender_nickname'];
   $ct_request->sender_ip = cleantalk_get_real_ip();
 
-  $ct_submit_time = NULL;
+  $ct_submit_time = submit_time_test();
   //drupal_session_start();
   switch ($spam_check['type']) {
     case 'comment':
     case 'contact':
     case 'node':
     case 'webform':
-      if (isset($_SESSION['ct_submit_comment_time'])) {
-        $ct_submit_time = REQUEST_TIME - $_SESSION['ct_submit_comment_time'];
-      }
       $timelabels_key = 'mail_error_comment';
 
       $ct_request->submit_time = $ct_submit_time;
@@ -2030,9 +2026,6 @@ function _cleantalk_check_spam($spam_check) {
       break;
 
     case 'register':
-      if (isset($_SESSION['ct_submit_register_time'])) {
-        $ct_submit_time = REQUEST_TIME - $_SESSION['ct_submit_register_time'];
-      }
       $timelabels_key = 'mail_error_reg';
       $ct_request->submit_time = $ct_submit_time;
       $ct_request->tz = !empty($spam_check['timezone']) ? $spam_check['timezone'] : '';
@@ -2258,7 +2251,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-337',
+                    'agent'=>'drupal-338',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2308,7 +2301,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-337',
+                    'agent'=>'drupal-338',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2336,7 +2329,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-337');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-338');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
@@ -2686,3 +2679,56 @@ function cleantalk_find_spammers(&$form, &$form_state) {
       break;
   }
 }
+    /*
+     * Set Cookies test for cookie test
+     * Sets cookies with pararms timestamp && landing_timestamp && pervious_referer
+     * Sets test cookie with all other cookies
+     */
+function apbct_cookie()
+{
+        
+    // Cookie names to validate
+    $cookie_test_value = array(
+        'cookies_names' => array(),
+        'check_value' => variable_get('cleantalk_authkey', ''),
+    );           
+        // Submit time
+    $apbct_timestamp = time();
+    setcookie('apbct_timestamp', $apbct_timestamp, 0, '/');
+    $cookie_test_value['cookies_names'][] = 'apbct_timestamp';
+    $cookie_test_value['check_value'] .= $apbct_timestamp;
+
+     // Cookies test
+    $cookie_test_value['check_value'] = md5($cookie_test_value['check_value']);
+    setcookie('apbct_cookies_test', json_encode($cookie_test_value), 0, '/');
+
+}
+function apbct_cookies_test()
+{       
+    if(isset($_COOKIE['apbct_cookies_test'])){
+            
+        $cookie_test = json_decode(stripslashes($_COOKIE['apbct_cookies_test']), true);
+            
+        $check_srting = variable_get('cleantalk_authkey', '');
+        foreach($cookie_test['cookies_names'] as $cookie_name){
+                $check_srting .= isset($_COOKIE[$cookie_name]) ? $_COOKIE[$cookie_name] : '';
+            } unset($cokie_name);
+            
+        if($cookie_test['check_value'] == md5($check_srting)){
+            return 1;
+        }else{
+            return 0;
+            }
+        }else{
+            return null;
+        }
+} 
+
+function submit_time_test()
+{
+    if(apbct_cookies_test() == 1){
+        return time() - $_COOKIE['apbct_timestamp'];
+    }else{
+        return null;
+    }    
+} 
