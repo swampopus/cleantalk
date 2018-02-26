@@ -58,7 +58,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Enable custom contact forms checking'),
     '#default_value' => $ct_ccf,
-    '#description' => t('Enabling this option will aloow you to check all submissions to your site.'),
+    '#description' => t('Enabling this option will allow you to check all submissions to your site.'),
   );
   
   $form['cleantalk_sfw'] = array(
