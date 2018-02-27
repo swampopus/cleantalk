@@ -1477,10 +1477,8 @@ function cleantalk_validate_comment(&$form, &$form_state) {
   if ($user->uid > 0) {
     
     # Don't check admin activity
-    if (isset($user->roles) && is_array($user->roles)) {
-        if (in_array('administrator', $user->roles)) {
+    if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
             return;
-        }
     }
   }
 
@@ -1572,10 +1570,8 @@ function cleantalk_validate_contact_message(&$form, &$form_state) {
   if ($user->uid > 0) {
 
     # Don't check admin activity
-    if (isset($user->roles) && is_array($user->roles)) {
-        if (in_array('administrator', $user->roles)) {
+    if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
             return;
-        }
     }
 
     $result = db_query(
@@ -2397,10 +2393,8 @@ function cleantalk_webform_submission_presave(&$node, &$submission) {
   if ($user->uid > 0) {
 
     # Don't check admin activity
-    if (isset($user->roles) && is_array($user->roles)) {
-        if (in_array('administrator', $user->roles)) {
+    if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
             return;
-        }
     }
 
     $result = db_query(
