@@ -1862,7 +1862,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-339';
+  $ct_request->agent = 'drupal-338';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1975,13 +1975,14 @@ function _cleantalk_check_spam($spam_check) {
       'REFFERRER' => $refferrer,
       'post_url' => $refferrer,
       'USER_AGENT' => $user_agent,
-      'ct_options' => drupal_json_encode($ct_options)
+      'ct_options' => drupal_json_encode($ct_options),
+      'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
     )
   );
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-339';
+  $ct_request->agent = 'drupal-338';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2255,7 +2256,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-339',
+                    'agent'=>'drupal-338',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2305,7 +2306,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-339',
+                    'agent'=>'drupal-338',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2333,7 +2334,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-339');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-338');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
@@ -2697,12 +2698,20 @@ function apbct_cookie()
     $cookie_test_value = array(
         'cookies_names' => array(),
         'check_value' => variable_get('cleantalk_authkey', ''),
-    );           
-        // Submit time
+    );  
+
+    // Submit time
     $apbct_timestamp = time();
     setcookie('apbct_timestamp', $apbct_timestamp, 0, '/');
     $cookie_test_value['cookies_names'][] = 'apbct_timestamp';
     $cookie_test_value['check_value'] .= $apbct_timestamp;
+
+    //Previous referer
+    if(!empty($_SERVER['HTTP_REFERER'])){
+        setcookie('apbct_prev_referer', $_SERVER['HTTP_REFERER'], 0, '/');
+        $cookie_test_value['cookies_names'][] = 'apbct_prev_referer';
+        $cookie_test_value['check_value'] .= $_SERVER['HTTP_REFERER'];
+    }
 
      // Cookies test
     $cookie_test_value['check_value'] = md5($cookie_test_value['check_value']);
