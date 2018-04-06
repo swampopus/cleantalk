@@ -544,7 +544,7 @@ class Cleantalk {
     * Server connection timeout in seconds 
     * @var int
     */
-    private $server_timeout = 3;
+    private $server_timeout = 15;
 
     /**
      * Cleantalk server url
@@ -763,7 +763,7 @@ class Cleantalk {
      * @param $msg
      * @return boolean|\CleantalkResponse
      */
-    private function sendRequest($data = null, $url, $server_timeout = 3) {
+    private function sendRequest($data = null, $url, $server_timeout = 15) {
         // Convert to array
         $data = drupal_json_decode(drupal_json_encode($data));
 
