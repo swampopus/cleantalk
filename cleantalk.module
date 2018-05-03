@@ -113,15 +113,13 @@ class CleanTalkSFW
             db_truncate('{cleantalk_sfw}')->execute();
             
             $result=$result['data'];
-            $query="INSERT INTO `{cleantalk_sfw}` VALUES ";
-            for($i=0;$i<sizeof($result);$i++){
-                if($i==sizeof($result)-1){
-                    $query.="(".$result[$i][0].",".$result[$i][1].");";
-                }else{
-                    $query.="(".$result[$i][0].",".$result[$i][1]."), ";
-                }
-            }
-            $result = db_query($query);
+            $sfw_values = array();
+            for($i=0;$i<sizeof($result);$i++)
+                $sfw_values[] = array('network'=>$result[$i][0],'mask'=>$result[$i][1]);
+            $query = db_insert('cleantalk_sfw')->fields(array('network','mask'));
+            foreach ($sfw_values as $record)
+                $query->values($record);
+            $query->execute();
                 
             variable_set('ct_sfw_last_updated', time());
         }
