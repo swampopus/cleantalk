@@ -1822,7 +1822,7 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   }
   else {
     $session_time_key = 'ct_submit_comment_time';
-    if ($form_id == 'contact_site_form' || $form_id == 'contact_personal_form') {
+    if (preg_match('|contact_(.*?)_form|', $form_id)) {
       $form['#validate'][] = 'cleantalk_validate_contact_message';
     }
     else {
