@@ -1339,53 +1339,15 @@ setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
   );
 }
 
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function cleantalk_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
 
 /**
  * Implements hook_form_BASE_FORM_ID_alter().
  */
-function cleantalk_form_comment_form_alter(&$form, &$form_state, $form_id) {
+function cleantalk_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
 }
 
-/**
- * Implements hook_form_BASE_FORM_ID_alter().
- */
-function cleantalk_form_node_form_alter(&$form, &$form_state, $form_id) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
 
-/**
- * Implements hook_form_BASE_FORM_ID_alter().
- */
-//function cleantalk_form_alter(&$form, &$form_state, $form_id) {
-//  _cleantalk_form_alter($form, $form_state, $form_id);
-//}
-
-/**
- * Implements hook_form_BASE_FORM_ID_alter()
- */
-function cleantalk_form_comment_node_webform_form_alter( &$form, &$form_state,$form_id ) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
-
-/**
- * Implements hook_form_BASE_FORM_ID_alter()
- */
-function cleantalk_form_mailchimp_signup_subscribe_form_alter(&$form, &$form_state, $form_id) {
-  drupal_session_start();
-  $_SESSION['ct_submit_comment_time'] = REQUEST_TIME;
-
-  $field_name = 'ct_checkjs';
-  $ct_check_def = '0';
-  if (!isset($_COOKIE[$field_name])) {
-    setcookie($field_name, $ct_check_def, 0, '/');
-  }
 
   // We cannot place JS in separate file.
   // Because it is not static - we have to use generated values.
@@ -1405,21 +1367,7 @@ setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
       'every_page' => FALSE,
     )
   );*/
-}
 
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function cleantalk_form_contact_site_form_alter(&$form, &$form_state, $form_id) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function cleantalk_form_contact_personal_form_alter(&$form, &$form_state, $form_id) {
-  _cleantalk_form_alter($form, $form_state, $form_id);
-}
 
 /**
  * Implements hook_user_presave().
@@ -1837,7 +1785,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-339';
+  $ct_request->agent = 'drupal-340';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1853,7 +1801,8 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   /*if ($js_cookie_added) {
     return;
   }*/
-  
+  if (user_access('administer modules') && path_is_admin(current_path()) || $form_id == 'search_form' || $form_id =='user_login_form' || $form_id == 'search_block_form' || $form_id == 'user_login_block')
+    return;
   $ct_link = variable_get('cleantalk_link', 0);
   if($ct_link!=0)
   {
@@ -1957,7 +1906,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-339';
+  $ct_request->agent = 'drupal-340';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2231,7 +2180,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-339',
+                    'agent'=>'drupal-340',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2281,7 +2230,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-339',
+                    'agent'=>'drupal-340',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2309,7 +2258,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-339');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-340');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
