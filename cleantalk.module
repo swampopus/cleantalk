@@ -795,13 +795,22 @@ class Cleantalk {
             // Disabling CA cert verivication
             // Disabling common name verification
             if ($this->ssl_on) {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            }else{ // Disabling CA cert verivication and common name verification
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             }
 
             $result = curl_exec($ch);
             if (!$result) {
                 $curl_error = curl_error($ch);
+                // Use SSL next time, if error occurs.
+                if(!$this->ssl_on){
+                    $this->ssl_on = true;
+                    $args = func_get_args();
+                    return $this->sendRequest($args[0], $args[1], $server_timeout);
+                }
             }
             
             curl_close($ch); 
@@ -905,7 +914,7 @@ class Cleantalk {
                         $server_host = $server['ip'];
                         $work_url = $server_host;
                     }
-                    $work_url = $url_prefix . $work_url; 
+                    $work_url = $url_prefix . gethostbyaddr($work_url); 
                     if (isset($url_suffix)) 
                         $work_url = $work_url . $url_suffix;
                     
@@ -1751,7 +1760,7 @@ function cleantalk_mail($key, &$message, $params) {
  */
 function _cleantalk_get_ws() {
   return array(
-    'work_url' => variable_get('cleantalk_work_url', 'http://moderate.cleantalk.ru'),
+    'work_url' => variable_get('cleantalk_work_url', ''),
     'server_url' => variable_get('cleantalk_server_url', 'http://moderate.cleantalk.ru'),
     'server_ttl' => variable_get('cleantalk_server_ttl', 0),
     'server_changed' => variable_get('cleantalk_server_changed', 0),
@@ -1761,11 +1770,8 @@ function _cleantalk_get_ws() {
 /**
  * Cleantalk inner function - sets working server.
  */
-function _cleantalk_set_ws($work_url = 'http://moderate.cleantalk.ru',
-  $server_url = 'http://moderate.cleantalk.ru',
-  $server_ttl = 0, $server_changed = 0) {
+function _cleantalk_set_ws($work_url, $server_ttl, $server_changed) {
   variable_set('cleantalk_work_url', $work_url);
-  variable_set('cleantalk_server_url', $server_url);
   variable_set('cleantalk_server_ttl', $server_ttl);
   variable_set('cleantalk_server_changed', $server_changed);
 }
@@ -1782,10 +1788,10 @@ function _cleantalk_send_feedback($request_id, $feedback) {
   $ct->server_url = $ct_ws['server_url'];
   $ct->server_ttl = $ct_ws['server_ttl'];
   $ct->server_changed = $ct_ws['server_changed'];
-
+  $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-340';
+  $ct_request->agent = 'drupal-341';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1880,6 +1886,7 @@ function _cleantalk_check_spam($spam_check) {
   $ct->server_url = $ct_ws['server_url'];
   $ct->server_ttl = $ct_ws['server_ttl'];
   $ct->server_changed = $ct_ws['server_changed'];
+  $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
   $ct_options=Array(
     'access_key' => $ct_authkey,
     'cleantalk_comments' => variable_get('cleantalk_comments', 3),
@@ -1906,7 +1913,7 @@ function _cleantalk_check_spam($spam_check) {
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-340';
+  $ct_request->agent = 'drupal-341';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -1973,7 +1980,7 @@ function _cleantalk_check_spam($spam_check) {
 
   if ($ct->server_change) {
     _cleantalk_set_ws(
-            $ct->work_url, $ct->server_url, $ct->server_ttl, REQUEST_TIME
+            $ct->work_url, $ct->server_ttl, REQUEST_TIME
     );
   }
 
@@ -2180,7 +2187,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-340',
+                    'agent'=>'drupal-341',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2230,7 +2237,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-340',
+                    'agent'=>'drupal-341',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2258,7 +2265,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-340');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-341');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
@@ -2323,28 +2330,11 @@ function cleantalk_boot() {
 function cleantalk_webform_submission_presave(&$node, &$submission) {
   global $user;
 
-  // Don't check if comments are not installed
-    if (!module_exists('comment'))
-        return;
-
-  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
-  if ($user->uid > 0) {
-
     # Don't check admin activity
     if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
             return;
     }
-    $result = db_query(
-      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
-      array(':uid' => $user->uid)
-    );
-    $count = intval($result->fetchObject()->count);
-  
-    $ct_comments = variable_get('cleantalk_comments', 3);
-    if ($count >= $ct_comments) {
-      return;
-    }
-  }
+
   
   $sender_email = null;
     $message = '';

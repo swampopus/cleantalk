@@ -19,6 +19,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $ct_sfw = variable_get('cleantalk_sfw', 0);
   $ct_wf_silent = variable_get('cleantalk_wf_silent', 0);
   $ct_wf_nomail = variable_get('cleantalk_wf_nomail', 0);
+  $ct_ssl_on = variable_get('cleantalk_ssl_on', 0);
 
   $form['cleantalk_authkey'] = array(
     '#type' => 'textfield',
@@ -89,5 +90,11 @@ function cleantalk_settings_form($form, &$form_state) {
     '#description' => t('Don\'t send WebForm submission notification emails if spam.'),
   );
 
+  $form['cleantalk_ssl_on'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable SSL secure connection'),
+    '#default_value' => $ct_ssl_on,
+    '#description' => t('Enabling this option will allow you to secure your connection.'),
+  );
   return system_settings_form($form);
 }
