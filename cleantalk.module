@@ -914,7 +914,7 @@ class Cleantalk {
                         $server_host = $server['ip'];
                         $work_url = $server_host;
                     }
-                    $work_url = $url_prefix . filter_var($work_url,FILTER_VALIDATE_IP) !== false ? gethostbyaddr($work_url):$work_url; 
+                    $work_url = $url_prefix . gethostbyaddr($work_url); 
                     if (isset($url_suffix)) 
                         $work_url = $work_url . $url_suffix;
                     
@@ -1382,6 +1382,9 @@ setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
  * Implements hook_user_presave().
  */
 function cleantalk_user_presave(&$edit, $account, $category) {
+
+    if (user_access('administer modules') && path_is_admin(current_path()))
+        return;
   $ct_result = _cleantalk_ct_result();
   if ($account->is_new && @empty($ct_result['ct_request_id'])){
   
@@ -1549,6 +1552,8 @@ function cleantalk_validate_contact_message(&$form, &$form_state) {
  * Implements hook_comment_presave().
  */
 function cleantalk_comment_presave($comment) {
+    if (user_access('administer modules') && path_is_admin(current_path()))
+        return;
   $ct_result = _cleantalk_ct_result();
   if (!empty($ct_result['ct_request_id'])) {
     $ct_automod = variable_get('cleantalk_automod', 1);
@@ -1563,6 +1568,8 @@ function cleantalk_comment_presave($comment) {
 }
 
 function cleantalk_node_presave($node) {
+    if (user_access('administer modules') && path_is_admin(current_path()))
+        return;
   $ct_result = _cleantalk_ct_result();
   if (!empty($ct_result['ct_request_id'])) {
     $ct_automod = variable_get('cleantalk_automod', 1);
@@ -2382,7 +2389,9 @@ function cleantalk_webform_submission_presave(&$node, &$submission) {
             $node->webform['emails'] = array();
     }
     if (variable_get('cleantalk_wf_silent', 1) != 1) {
-            drupal_set_message($spam_result['ct_result_comment'],'error');
+        _cleantalk_die($spam_result['ct_result_comment']);
+            //drupal_set_message($spam_result['ct_result_comment'],'error');
+
     }
       }
   }

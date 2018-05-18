@@ -80,7 +80,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('WebForm - no moderation messages for visitors'),
     '#default_value' => $ct_wf_silent,
-    '#description' => t('Don\'t display messages from CleanTalk moderation servers for WebForm submits.'),
+    '#description' => t('Don\'t display messages from CleanTalk moderation servers for WebForm submits. All blocked requests will be automatically marked as "draft".'),
   );
 
   $form['cleantalk_wf_nomail'] = array(
