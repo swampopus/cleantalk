@@ -1529,6 +1529,24 @@ function cleantalk_validate_comment(&$form, &$form_state) {
 function cleantalk_validate_contact_message(&$form, &$form_state) {
   global $user;
 
+  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
+  if ($user->uid > 0 && module_exists('comment')) {
+
+    # Don't check admin activity
+    if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
+            return;
+    }
+    $result = db_query(
+      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+      array(':uid' => $user->uid)
+    );
+    $count = intval($result->fetchObject()->count);
+
+    $ct_comments = variable_get('cleantalk_comments', 3);
+    if ($count >= $ct_comments) {
+      return;
+    }
+  }
   $spam_check = array();
   $spam_check['type'] = 'contact';
   $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
@@ -2337,10 +2355,24 @@ function cleantalk_boot() {
 function cleantalk_webform_submission_presave(&$node, &$submission) {
   global $user;
 
+  // Don't check reged user with >= 'cleantalk_comments' approved msgs.
+  if ($user->uid > 0 && module_exists('comment')) {
+
     # Don't check admin activity
     if (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])) {
             return;
     }
+    $result = db_query(
+      'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
+      array(':uid' => $user->uid)
+    );
+    $count = intval($result->fetchObject()->count);
+  
+    $ct_comments = variable_get('cleantalk_comments', 3);
+    if ($count >= $ct_comments) {
+      return;
+    }
+  }
 
   
   $sender_email = null;
