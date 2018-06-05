@@ -1,5 +1,5 @@
 <?php
-
+require_once(dirname(__FILE__) . '/custom_config.php');  
 /**
  * @file
  * Main CleanTalk integration module functions.
@@ -1885,6 +1885,15 @@ function _cleantalk_get_checkjs_value() {
  * Cleantalk inner function - performs antispam checking.
  */
 function _cleantalk_check_spam($spam_check) {
+
+$custom_config = new CleantalkCustomConfig();
+$url_exclusion = $custom_config->get_url_exclusions();
+if ($url_exclusion)
+{
+    foreach ($url_exclusion as $key=>$value)
+        if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
+            return false;         
+}    
   if(defined('CLEANTALK_SKIP'))
   {
     return false;
@@ -2489,6 +2498,62 @@ function get_data_from_submit($value = null, $field_name = null) {
 */
 function get_fields_any(&$email,&$message,&$nickname,&$subject, &$contact,$arr)
 {
+    // Skip feilds with these strings and known service fields
+    $skip_fields_with_strings = array( 
+        // Common
+        'ct_checkjs', //Do not send ct_checkjs
+        'nonce', //nonce for strings such as 'rsvp_nonce_name'
+        'security',
+        // 'action',
+        'http_referer',
+        'timestamp',
+        'captcha',
+        // Formidable Form
+        'form_key',
+        'submit_entry',
+        // Custom Contact Forms
+        'form_id',
+        'ccf_form',
+        'form_page',
+        // Qu Forms
+        'iphorm_uid',
+        'form_url',
+        'post_id',
+        'iphorm_ajax',
+        'iphorm_id',
+        // Fast SecureContact Froms
+        'fs_postonce_1',
+        'fscf_submitted',
+        'mailto_id',
+        'si_contact_action',
+        // Ninja Forms
+        'formData_id',
+        'formData_settings',
+        'formData_fields_\d+_id',
+        'formData_fields_\d+_files.*',      
+        // E_signature
+        'recipient_signature',
+        'output_\d+_\w{0,2}',
+        // Contact Form by Web-Settler protection
+        '_formId',
+        '_returnLink',
+        // Social login and more
+        '_save',
+        '_facebook',
+        '_social',
+        'user_login-',
+        'submit',
+        'form_token',
+        'creation_time',
+        'uenc',
+        'product',
+        'qty',
+
+    ); 
+    $custom_config = new CleantalkCustomConfig();
+    $fields_exclusions = $custom_config->get_fields_exclusions();
+    if ($fields_exclusions)
+        array_merge($skip_fields_with_strings,$fields_exclusions);              
     $skip_params = array(
         'ipn_track_id', // PayPal IPN #
         'txn_type', // PayPal transaction type
@@ -2496,6 +2561,12 @@ function get_fields_any(&$email,&$message,&$nickname,&$subject, &$contact,$arr)
     );
     foreach($arr as $key=>$value)
     {
+        foreach ($skip_fields_with_strings as $needle)
+        {
+            if (preg_match("/".$needle."/", $key) == 1){
+                continue(2);
+            }
+        }
         if(!is_array($value)&&!is_object($value))
         {
             if (in_array($key, $skip_params) && $key!=0 && $key!='' || preg_match("/^ct_checkjs/", $key)) {
@@ -2573,6 +2644,9 @@ function cleantalk_form_user_filter_form_alter(&$form, &$form_state, $form_id) {
  * Process submit of 'Check for spammers' button on user_filter_form.
  */
 function cleantalk_find_spammers(&$form, &$form_state) {
+
+     if (user_access('administer modules') && path_is_admin(current_path()))
+{
   $ct_authkey = variable_get('cleantalk_authkey', '');
   if (empty($ct_authkey)) {
     return;
@@ -2639,7 +2713,9 @@ function cleantalk_find_spammers(&$form, &$form_state) {
         }
       }
       break;
-  }
+  }    
+}  
+
 }
     /*
      * Set Cookies test for cookie test
