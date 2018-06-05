@@ -1816,7 +1816,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
   $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-341';
+  $ct_request->agent = 'drupal-342';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1947,7 +1947,7 @@ if ($url_exclusion)
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-341';
+  $ct_request->agent = 'drupal-342';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2221,7 +2221,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-341',
+                    'agent'=>'drupal-342',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2271,7 +2271,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-341',
+                    'agent'=>'drupal-342',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2299,7 +2299,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-341');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-342');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
