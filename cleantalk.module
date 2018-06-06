@@ -1322,8 +1322,6 @@ function cleantalk_get_real_ip()
 */
 
 function cleantalk_page_build(&$page) {
-  drupal_session_initialize();
-  drupal_save_session(true);
   
   if($_SERVER['REQUEST_METHOD']=='GET')
   {
@@ -1856,11 +1854,9 @@ if ($url_exclusion)
   $js_cookie_added = TRUE;
 
   if ($form_id == 'user_register_form') {
-    $session_time_key = 'ct_submit_register_time';
     $form['#validate'][] = 'cleantalk_validate_register';
   }
   else {
-    $session_time_key = 'ct_submit_comment_time';
     if (preg_match('|contact_(.*?)_form|', $form_id)) {
       $form['#validate'][] = 'cleantalk_validate_contact_message';
     }
@@ -1964,7 +1960,6 @@ if ($url_exclusion)
   $ct_request->sender_ip = cleantalk_get_real_ip();
 
   $ct_submit_time = submit_time_test();
-  //drupal_session_start();
   switch ($spam_check['type']) {
     case 'comment':
     case 'contact':
