@@ -1827,6 +1827,14 @@ function _cleantalk_send_feedback($request_id, $feedback) {
  * Cleantalk inner function - alters needed form.
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
+ $custom_config = new CleantalkCustomConfig();
+$url_exclusion = $custom_config->get_url_exclusions();
+if ($url_exclusion)
+{
+    foreach ($url_exclusion as $key=>$value)
+        if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
+            return;         
+}     
   static $js_cookie_added = FALSE;
 
   /*if ($js_cookie_added) {
