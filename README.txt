@@ -37,25 +37,9 @@ Note:
 
 -- INSTALLATION --
 
-1. Download latest CleanTalk PHP-antispam classes from
-
-     https://github.com/CleanTalk/php-antispam
-
-   and extract the following files into a 'cleantalk' library directory:
-
-     sites/all/libraries/cleantalk/JSON.php
-     sites/all/libraries/cleantalk/cleantalk.class.php
-
-   It is recommended that you create your libraries directory at one of the
-   following locations:
-
-     sites/all/libraries/cleantalk
-     sites/<site>/libraries/cleantalk
-
-   Consult the Libraries API documentation for further information.
-
+1. Install CleanTalk module via Update manager.
 2. Get access key on http://CleanTalk.org.
-3. Install CleanTalk module as usual and put access key into its settings.
+3. Paste your access key into plugin's settings.
 
 
 -- TESTING --

@@ -914,7 +914,8 @@ class Cleantalk {
                         $server_host = $server['ip'];
                         $work_url = $server_host;
                     }
-                    $work_url = $url_prefix . gethostbyaddr($work_url); 
+                    $host = filter_var($work_url,FILTER_VALIDATE_IP) ? gethostbyaddr($work_url) : $work_url;
+                    $work_url = $url_prefix . $host;
                     if (isset($url_suffix)) 
                         $work_url = $work_url . $url_suffix;
                     
@@ -1814,7 +1815,7 @@ function _cleantalk_send_feedback($request_id, $feedback) {
   $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-342';
+  $ct_request->agent = 'drupal-343';
   $ct_request->sender_ip = cleantalk_get_real_ip();
   $ct_request->feedback = $request_id . ':' . $feedback;
 
@@ -1825,8 +1826,8 @@ function _cleantalk_send_feedback($request_id, $feedback) {
  * Cleantalk inner function - alters needed form.
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
- $custom_config = new CleantalkCustomConfig();
-$url_exclusion = $custom_config->get_url_exclusions();
+
+$url_exclusion = CleantalkCustomConfig::get_url_exclusions();
 if ($url_exclusion)
 {
     foreach ($url_exclusion as $key=>$value)
@@ -1890,8 +1891,8 @@ function _cleantalk_get_checkjs_value() {
  */
 function _cleantalk_check_spam($spam_check) {
 
-$custom_config = new CleantalkCustomConfig();
-$url_exclusion = $custom_config->get_url_exclusions();
+
+$url_exclusion = CleantalkCustomConfig::get_url_exclusions();
 if ($url_exclusion)
 {
     foreach ($url_exclusion as $key=>$value)
@@ -1951,7 +1952,7 @@ if ($url_exclusion)
 
   $ct_request = new CleantalkRequest();
   $ct_request->auth_key = $ct_authkey;
-  $ct_request->agent = 'drupal-342';
+  $ct_request->agent = 'drupal-343';
   $ct_request->response_lang = 'en';
   $ct_request->js_on = $checkjs;
   $ct_request->sender_info = $sender_info;
@@ -2224,7 +2225,7 @@ function cleantalk_init() {
                     'method_name' => 'check_message',
                     'message' => $message,
                     'example' => null,
-                    'agent'=>'drupal-342',
+                    'agent'=>'drupal-343',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>$sender_nickname,
@@ -2274,7 +2275,7 @@ function cleantalk_init() {
                     'method_name'=> 'check_message',
                     'message'=>$message,
                     'example'=>null,
-                    'agent'=>'drupal-342',
+                    'agent'=>'drupal-343',
                     'sender_ip'=>$_SERVER['REMOTE_ADDR'],
                     'sender_email'=>$sender_email,
                     'sender_nickname'=>'',
@@ -2302,7 +2303,7 @@ function cleantalk_init() {
     if (path_is_admin(current_path())){
         if(isset($_POST['cleantalk_authkey'])){
             $url = 'http://moderate.cleantalk.org/api2.0';
-            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-342');
+            $dt=Array('auth_key'=>$_POST['cleantalk_authkey'], 'method_name' => 'send_feedback', 'feedback' => 0 . ':' . 'drupal-343');
             sendRawRequest($url,$dt,true);
         }
         if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1){
@@ -2553,8 +2554,7 @@ function get_fields_any(&$email,&$message,&$nickname,&$subject, &$contact,$arr)
         'qty',
 
     ); 
-    $custom_config = new CleantalkCustomConfig();
-    $fields_exclusions = $custom_config->get_fields_exclusions();
+    $fields_exclusions = CleantalkCustomConfig::get_fields_exclusions();
     if ($fields_exclusions)
         array_merge($skip_fields_with_strings,$fields_exclusions);              
     $skip_params = array(
