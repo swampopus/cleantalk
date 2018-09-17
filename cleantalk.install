@@ -8,10 +8,8 @@
 /**
  * Implements hook_install().
  */
-function cleantalk_install() {
-	
-   variable_set('ct_sfw_last_logs_sent', time());
-   variable_set('ct_sfw_last_updated', time());
+function cleantalk_install() 
+{
 	
   db_drop_table('cleantalk_timelabels');
   $cleantalk_timelabels = array(
