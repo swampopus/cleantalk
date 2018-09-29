@@ -7,7 +7,7 @@ require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkHelper.php');
 
 
-define("CLEANTALK_USER_AGENT", 'drupal-343');
+define("CLEANTALK_USER_AGENT", 'drupal-344');
 
 /**
  * @file
@@ -496,6 +496,9 @@ function _cleantalk_check_spam($spam_check)
 {
     global $user;
 
+    if (empty($spam_check) || !isset($spam_check['type']))
+        return;
+
     if (user_access('administer modules') && path_is_admin(current_path()) || (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])))
         return;
 
@@ -560,8 +563,8 @@ function _cleantalk_check_spam($spam_check)
             'cookies_enabled' => apbct_cookies_test(),
         )
     );
-    $ct_request->sender_email = $spam_check['sender_email'];
-    $ct_request->sender_nickname = $spam_check['sender_nickname'];
+    $ct_request->sender_email = isset($spam_check['sender_email']) ? $spam_check['sender_email'] : '';
+    $ct_request->sender_nickname = isset($spam_check['sender_nickname']) ? $spam_check['sender_nickname']: '' ;
     $ct_request->sender_ip = CleantalkHelper::ip_get(array('real'), false);
     $ct_request->x_forwarded_for = CleantalkHelper::ip_get(array('x_forwarded_for'), false);
     $ct_request->x_real_ip       = CleantalkHelper::ip_get(array('x_real_ip'), false);
@@ -616,97 +619,102 @@ function _cleantalk_check_spam($spam_check)
         break;
 
     }
+    
     $ret_val = array();
-    $ret_val['ct_request_id'] = $ct_result->id;
 
-    if ($ct->server_change) 
-        _cleantalk_set_ws($ct->work_url, $ct->server_ttl, REQUEST_TIME);
-
-    // First check errstr flag.
-    if (!empty($ct_result->errstr) || (!empty($ct_result->inactive) && $ct_result->inactive == 1)) 
+    if ($ct_result)
     {
-        // Cleantalk error so we go default way (no action at all).
-        $ret_val['errno'] = 1;
-        if($checkjs == 0) 
-            $ret_val['allow'] = 0;
+        $ret_val['ct_request_id'] = $ct_result->id;
 
-        // Just inform admin.
-        $err_title = $_SERVER['SERVER_NAME'] . ' - CleanTalk hook error';
+        if ($ct->server_change) 
+            _cleantalk_set_ws($ct->work_url, $ct->server_ttl, REQUEST_TIME);
 
-        if (!empty($ct_result->errstr)) 
-            $ret_val['errstr'] = _cleantalk_filter_response($ct_result->errstr);
-        else 
-            $ret_val['errstr'] = _cleantalk_filter_response($ct_result->comment);
-
-        $send_flag = FALSE;
-
-        $result = db_select('cleantalk_timelabels', 'c')
-                ->fields('c', array('ct_value'))
-                ->condition('ct_key', $timelabels_key, '=')
-                ->execute();
-        if ($result->rowCount() == 0) 
-            $send_flag = TRUE;
-        elseif (REQUEST_TIME - 900 > $result->fetchObject()->ct_value) 
-            $send_flag = TRUE;
-        
-
-        if ($send_flag) 
+        // First check errstr flag.
+        if (!empty($ct_result->errstr) || (!empty($ct_result->inactive) && $ct_result->inactive == 1)) 
         {
-            db_merge('cleantalk_timelabels')
-            ->key(array(
-            'ct_key' => $timelabels_key,
-            ))
-            ->fields(array(
-            'ct_value' => REQUEST_TIME,
-            ))
-            ->execute();
+            // Cleantalk error so we go default way (no action at all).
+            $ret_val['errno'] = 1;
+            if($checkjs == 0) 
+                $ret_val['allow'] = 0;
 
-            $to = variable_get('site_mail', ini_get('sendmail_from'));
-            if (!empty($to)) 
+            // Just inform admin.
+            $err_title = $_SERVER['SERVER_NAME'] . ' - CleanTalk hook error';
+
+            if (!empty($ct_result->errstr)) 
+                $ret_val['errstr'] = _cleantalk_filter_response($ct_result->errstr);
+            else 
+                $ret_val['errstr'] = _cleantalk_filter_response($ct_result->comment);
+
+            $send_flag = FALSE;
+
+            $result = db_select('cleantalk_timelabels', 'c')
+                    ->fields('c', array('ct_value'))
+                    ->condition('ct_key', $timelabels_key, '=')
+                    ->execute();
+            if ($result->rowCount() == 0) 
+                $send_flag = TRUE;
+            elseif (REQUEST_TIME - 900 > $result->fetchObject()->ct_value) 
+                $send_flag = TRUE;
+            
+
+            if ($send_flag) 
             {
-                drupal_mail("cleantalk", $timelabels_key, $to, language_default(), array(
-                    'subject' => $err_title,
-                    'body' => $ret_val['errstr'],
-                    'headers' => array(),
-                ),
-                $to,
-                TRUE
-                );
+                db_merge('cleantalk_timelabels')
+                ->key(array(
+                'ct_key' => $timelabels_key,
+                ))
+                ->fields(array(
+                'ct_value' => REQUEST_TIME,
+                ))
+                ->execute();
+
+                $to = variable_get('site_mail', ini_get('sendmail_from'));
+                if (!empty($to)) 
+                {
+                    drupal_mail("cleantalk", $timelabels_key, $to, language_default(), array(
+                        'subject' => $err_title,
+                        'body' => $ret_val['errstr'],
+                        'headers' => array(),
+                    ),
+                    $to,
+                    TRUE
+                    );
+                }
             }
+            return $ret_val;
         }
-        return $ret_val;
-    }
 
-    $ret_val['errno'] = 0;
+        $ret_val['errno'] = 0;
 
-    if ($ct_result->allow == 1) 
-    {
-        // Not spammer.
-        $ret_val['allow'] = 1;
-        // Store request_id in globals to store it in DB later.
-        _cleantalk_ct_result('set', $ct_result->id);
-        // Don't store 'ct_result_comment', means good comment.
-    }
-    else 
-    {
-        // Spammer.
-        $ret_val['allow'] = 0;
-        $ret_val['ct_result_comment'] = _cleantalk_filter_response($ct_result->comment);
-
-        // Check stop_queue flag.
-        if ($spam_check['type'] == 'comment' && $ct_result->stop_queue == 0) 
+        if ($ct_result->allow == 1) 
         {
-            // Spammer and stop_queue == 0 - to manual approvement.
-            $ret_val['stop_queue'] = 0;
-            // Store request_id and comment in static to store them in DB later.
-            // Store 'ct_result_comment' - means bad comment.
-            _cleantalk_ct_result('set', $ct_result->id, $ret_val['ct_result_comment']);
+            // Not spammer.
+            $ret_val['allow'] = 1;
+            // Store request_id in globals to store it in DB later.
+            _cleantalk_ct_result('set', $ct_result->id);
+            // Don't store 'ct_result_comment', means good comment.
         }
         else 
         {
-            // New user or Spammer and stop_queue == 1 - display form error message.
-            $ret_val['stop_queue'] = 1;
-        }
+            // Spammer.
+            $ret_val['allow'] = 0;
+            $ret_val['ct_result_comment'] = _cleantalk_filter_response($ct_result->comment);
+
+            // Check stop_queue flag.
+            if ($spam_check['type'] == 'comment' && $ct_result->stop_queue == 0) 
+            {
+                // Spammer and stop_queue == 0 - to manual approvement.
+                $ret_val['stop_queue'] = 0;
+                // Store request_id and comment in static to store them in DB later.
+                // Store 'ct_result_comment' - means bad comment.
+                _cleantalk_ct_result('set', $ct_result->id, $ret_val['ct_result_comment']);
+            }
+            else 
+            {
+                // New user or Spammer and stop_queue == 1 - display form error message.
+                $ret_val['stop_queue'] = 1;
+            }
+        }        
     }
 
     return $ret_val;
