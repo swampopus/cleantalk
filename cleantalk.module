@@ -128,8 +128,12 @@ function cleantalk_validate_comment(&$form, &$form_state)
         }
         $spam_result = _cleantalk_check_spam($spam_check);
 
-        if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1 && $spam_result['stop_queue'] == 1) 
-            form_set_error('comment_body', $spam_result['ct_result_comment']);        
+        if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+        {
+            if (variable_get('cleantalk_check_comments_automod', 0) == 0)
+                form_set_error('comment_body', $spam_result['ct_result_comment']); 
+        } 
+                   
     }
 
 }
@@ -192,8 +196,12 @@ function cleantalk_comment_presave($comment)
 {
     $ct_result = _cleantalk_ct_result();
 
-    if (!empty($ct_result['ct_request_id'])) 
-        $comment->status = $ct_result['ct_result_stop_queue'] === 1 ? COMMENT_PUBLISHED : COMMENT_NOT_PUBLISHED;
+    if (!empty($ct_result['ct_request_id']))
+    {
+        if ($ct_result['ct_result_allow'] === 0 && variable_get('cleantalk_check_comments_automod', 0) === 1)
+            $comment->status = COMMENT_NOT_PUBLISHED;
+    } 
+        
 }
 /**
  * Implements hook_menu().
@@ -314,7 +322,7 @@ function _cleantalk_check_spam($spam_check)
     if (user_access('administer modules') && path_is_admin(current_path()) || (isset($user->roles) && is_array($user->roles) && isset($user->roles[3])))
         return;
 
-    // Don't check reged user with >= 'cleantalk_comments' approved msgs.
+    // Don't check reged user with >= 'cleantalk_check_comments_min_approved' approved msgs.
     if ($user->uid > 0 && module_exists('comment')) 
     {
         $result = db_query(
@@ -323,7 +331,7 @@ function _cleantalk_check_spam($spam_check)
         );
         $count = intval($result->fetchObject()->count);
 
-        $ct_comments = variable_get('cleantalk_comments', 3);
+        $ct_comments = variable_get('cleantalk_check_comments_min_approved', 3);
         if ($count >= $ct_comments) 
             return;
     }
@@ -350,9 +358,10 @@ function _cleantalk_check_spam($spam_check)
     $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
     $ct_options=Array(
         'access_key' => $ct_authkey,
-        'cleantalk_comments' => variable_get('cleantalk_comments', 3),
-        'cleantalk_check_register' => variable_get('cleantalk_check_register', ''),
         'cleantalk_check_comments' => variable_get('cleantalk_check_comments', ''),
+        'cleantalk_check_comments_automod' => variable_get('cleantalk_check_comments_automod', ''),        
+        'cleantalk_check_comments_min_approved' => variable_get('cleantalk_check_comments_min_approved', 3),
+        'cleantalk_check_register' => variable_get('cleantalk_check_register', ''),
         'cleantalk_check_wf' => variable_get('cleantalk_check_wf', ''),
         'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
         'cleantalk_ccf' => variable_get('cleantalk_ccf', ''),        
@@ -505,7 +514,7 @@ function _cleantalk_check_spam($spam_check)
             // Not spammer.
             $ret_val['allow'] = 1;
             // Store request_id in globals to store it in DB later.
-            _cleantalk_ct_result('set', $ct_result->id);
+            _cleantalk_ct_result('set', $ct_result->id, $ret_val['allow']);
             // Don't store 'ct_result_comment', means good comment.
         }
         else 
@@ -519,7 +528,7 @@ function _cleantalk_check_spam($spam_check)
             {
                 // Store request_id and comment in static to store them in DB later.
                 // Store 'ct_result_comment' - means bad comment.
-                _cleantalk_ct_result('set', $ct_result->id, $ret_val['ct_result_comment'], $ct_result->stop_queue);
+                _cleantalk_ct_result('set', $ct_result->id, $ret_val['allow'], $ret_val['ct_result_comment']);
                 $ret_val['stop_queue'] = $ct_result->stop_queue;
             }
         }        
@@ -544,24 +553,24 @@ function _cleantalk_filter_response($ct_response)
 /**
  * Cleantalk inner function - stores spam checking result.
  */
-function _cleantalk_ct_result($cmd = 'get', $id = '', $comment = '', $stop_queue = 0) 
+function _cleantalk_ct_result($cmd = 'get', $id = '', $allow = 1, $comment = '') 
 {
     static $request_id = '';
+    static $result_allow = 1;
     static $result_comment = '';
-    static $result_stop_queue = 0;
 
     if ($cmd == 'set') 
     {
         $request_id = $id;
+        $result_allow = $allow;
         $result_comment = $comment;
-        $result_stop_queue = $stop_queue;
     }
     else 
     {
         return array(
         'ct_request_id' => $request_id,
+        'ct_result_allow' => $result_allow,
         'ct_result_comment' => $result_comment,
-        'ct_result_stop_queue' => $result_stop_queue,
         );
     }
 }
