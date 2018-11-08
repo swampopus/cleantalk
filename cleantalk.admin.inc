@@ -13,13 +13,14 @@ function cleantalk_settings_form($form, &$form_state) {
 
   $ct_authkey = variable_get('cleantalk_authkey', '');
   $ct_comments = variable_get('cleantalk_comments', $ct_comments_default);
-  $ct_automod = variable_get('cleantalk_automod', 1);
+  $ct_check_register = variable_get('cleantalk_check_register', 0);
+  $ct_check_comments = variable_get('cleantalk_check_comments', 0);
+  $ct_check_wf = variable_get('cleantalk_check_wf', 0);  
+  $ct_check_contact_forms = variable_get('cleantalk_check_contact_forms', 0);  
   $ct_ccf = variable_get('cleantalk_ccf', 0);
-  $ct_link = variable_get('cleantalk_link', 0);
   $ct_sfw = variable_get('cleantalk_sfw', 0);
-  $ct_wf_silent = variable_get('cleantalk_wf_silent', 0);
-  $ct_wf_nomail = variable_get('cleantalk_wf_nomail', 0);
   $ct_ssl_on = variable_get('cleantalk_ssl_on', 0);
+  $ct_link = variable_get('cleantalk_link', 0);  
 
   $form['cleantalk_authkey'] = array(
     '#type' => 'textfield',
@@ -45,21 +46,42 @@ function cleantalk_settings_form($form, &$form_state) {
     '#description' => t('Moderate messages of guests and registered users who have approved messages less than this value (must be more than 0).'),
   );
 
-  $form['cleantalk_automod'] = array(
+  $form['cleantalk_check_register'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable automoderation'),
-    '#default_value' => $ct_automod,
-    '#description' => t('Automatically publish good messages and put bad ones to admin approvement.') .
-    '<br /><span class="admin-enabled">' .
-    t('Note: It overrides "Skip comment approval" permissions') .
-    '</span>',
+    '#title' => t('Check registrations'),
+    '#default_value' => $ct_check_register,
+    '#description' => t('Enabling this option will allow you to check all registrations on your website.'),
   );
-  
+
+  $form['cleantalk_check_comments'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check comments'),
+    '#default_value' => $ct_check_comments,
+    '#description' => t('Enabling this option will allow you to check all comments on your website.'),
+  );
+
+  $form['cleantalk_check_wf'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check webforms'),
+    '#default_value' => $ct_check_wf,
+    '#description' => t('Enabling this option will allow you to check all webforms on your website.'),
+  );
+
+  $form['cleantalk_check_contact_forms'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check contact forms'),
+    '#default_value' => $ct_check_contact_forms,
+    '#description' => t('Enabling this option will allow you to check all contact forms on your website.'),
+  );
+
   $form['cleantalk_ccf'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable custom contact forms checking'),
     '#default_value' => $ct_ccf,
-    '#description' => t('Enabling this option will allow you to check all submissions to your site.'),
+    '#description' => t('Enabling this option will allow you to check all forms on your website.') .
+    '<br /><span class="admin-enabled">' .
+    t('Note: May cause conflicts!') .
+    '</span>',
   );
   
   $form['cleantalk_sfw'] = array(
@@ -68,27 +90,6 @@ function cleantalk_settings_form($form, &$form_state) {
     '#default_value' => $ct_sfw,
     '#description' => t('This option allows to filter spam bots before they access website. Also reduces CPU usage on hosting server and accelerates pages load time.'),
   );
-  
-  $form['cleantalk_link'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Tell others about CleanTalk'),
-    '#default_value' => $ct_link,
-    '#description' => t('Checking this box places a small link under the comment form that lets others know what anti-spam tool protects your site.'),
-  );
-
-  $form['cleantalk_wf_silent'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('WebForm - no moderation messages for visitors'),
-    '#default_value' => $ct_wf_silent,
-    '#description' => t('Don\'t display messages from CleanTalk moderation servers for WebForm submits. All blocked requests will be automatically marked as "draft".'),
-  );
-
-  $form['cleantalk_wf_nomail'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('WebForm - no spam notification emails'),
-    '#default_value' => $ct_wf_nomail,
-    '#description' => t('Don\'t send WebForm submission notification emails if spam.'),
-  );
 
   $form['cleantalk_ssl_on'] = array(
     '#type' => 'checkbox',
@@ -96,5 +97,13 @@ function cleantalk_settings_form($form, &$form_state) {
     '#default_value' => $ct_ssl_on,
     '#description' => t('Enabling this option will allow you to secure your connection.'),
   );
+
+  $form['cleantalk_link'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tell others about CleanTalk'),
+    '#default_value' => $ct_link,
+    '#description' => t('Checking this box places a small link under the comment form that lets others know what anti-spam tool protects your site.'),
+  );
+
   return system_settings_form($form);
 }

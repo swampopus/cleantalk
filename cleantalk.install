@@ -171,14 +171,15 @@ function cleantalk_uninstall() {
       user_role_delete($r);
     }
   }
-  variable_del('cleantalk_automod');
+  variable_del('cleantalk_check_register');
   variable_del('cleantalk_comments');
   variable_del('cleantalk_authkey');
   variable_del('cleantalk_ccf');
   variable_del('cleantalk_link');
   variable_del('cleantalk_sfw');
-  variable_del('cleantalk_wf_nomail');
-  variable_del('cleantalk_wf_silent');
+  variable_del('cleantalk_check_comments');
+  variable_del('cleantalk_check_wf');
+  variable_del('cleantalk_check_contact_forms');
   variable_del('cleantalk_ssl_on');
   variable_del('cleantalk_work_url');
   variable_del('cleantalk_server_url');
