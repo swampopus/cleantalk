@@ -172,12 +172,13 @@ function cleantalk_uninstall() {
     }
   }
   variable_del('cleantalk_check_register');
-  variable_del('cleantalk_comments');
   variable_del('cleantalk_authkey');
   variable_del('cleantalk_ccf');
   variable_del('cleantalk_link');
   variable_del('cleantalk_sfw');
   variable_del('cleantalk_check_comments');
+  variable_del('cleantalk_check_comments_automod');
+  variable_del('cleantalk_check_comments_min_approved');
   variable_del('cleantalk_check_wf');
   variable_del('cleantalk_check_contact_forms');
   variable_del('cleantalk_ssl_on');

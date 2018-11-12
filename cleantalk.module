@@ -7,7 +7,7 @@ require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkHelper.php');
 
 
-define("CLEANTALK_USER_AGENT", 'drupal-344');
+define("CLEANTALK_USER_AGENT", 'drupal-345');
 
 /**
  * @file
@@ -130,7 +130,7 @@ function cleantalk_validate_comment(&$form, &$form_state)
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
         {
-            if (variable_get('cleantalk_check_comments_automod', 0) == 0)
+            if (variable_get('cleantalk_check_comments_automod', 0) == 0 || $spam_result['stop_queue'] == 1)
                 form_set_error('comment_body', $spam_result['ct_result_comment']); 
         } 
                    
