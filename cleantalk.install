@@ -118,7 +118,9 @@ function cleantalk_install()
         'description' => 'Spam mask.',
       ),
     ),
-    'primary key' => array('network', 'mask'),
+    'indexes' => [
+      'network' => ['network'],
+    ],
   );
   db_create_table('cleantalk_sfw', $cleantalk_sfw);
   
