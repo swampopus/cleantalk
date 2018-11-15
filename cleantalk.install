@@ -9,8 +9,7 @@
  * Implements hook_install().
  */
 function cleantalk_install() 
-{
-  
+{  
   db_drop_table('cleantalk_timelabels');
   $cleantalk_timelabels = array(
     'description' => 'Timelabels for admin notification sending.',
@@ -64,7 +63,7 @@ function cleantalk_install()
   
   db_drop_table('cleantalk_sfw_logs');
     $cleantalk_sfw_logs = array(
-    'description' => 'Comment checking results - CIDs and server responces.',
+    'description' => 'SpamFireWall logs.',
     'fields' => array(
       'ip' => array(
         'type' => 'varchar',
@@ -129,48 +128,8 @@ function cleantalk_uninstall() {
   variable_del('ct_sfw_last_updated');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
-  db_drop_table('cleantalk_sfw_logs');
-  
+  db_drop_table('cleantalk_sfw_logs');  
 }
-
-/**
- * Implements hook_requirements().
- */
-/*function cleantalk_requirements($phase) {
-  $requirements = array();
-  // Ensure translations don't break at install time.
-  $t = get_t();
-
-  $my_module = 'cleantalk';
-  $title = 'CleanTalk PHP-antispam classes';
-
-  drupal_load('module', 'libraries');
-  $path = libraries_get_path($my_module);
-
-  if (
-    !$path ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/cleantalk.class.php') ||
-    !file_exists(DRUPAL_ROOT . '/' . $path . '/JSON.php')
-  ) {
-    // Since Libraries 2.x, $path is FALSE if the library does not exist.
-    $path = 'sites/all/libraries/cleantalk';
-    $requirements[$my_module] = array(
-      'title' => $t('CleanTalk PHP-antispam classes'),
-      'value' => $t('Missing'),
-      'severity' => REQUIREMENT_ERROR,
-      'description' => $phase == 'runtime' ? _cleantalk_library_missing_message_4runtime($title, $path) : _cleantalk_library_missing_message_4install($title, $path),
-    );
-  }
-  else {
-    $requirements[$my_module] = array(
-      'title' => $t('CleanTalk PHP-antispam classes'),
-      'value' => $t('Installed'),
-      'severity' => REQUIREMENT_OK,
-    );
-  }
-
-  return $requirements;
-}*/
 
 /**
  * Add new table for SpamFireWall logs
