@@ -1,4 +1,5 @@
 <?php
+namespace Drupal\cleantalk;
 
 /**
  * Cleantalk's hepler class

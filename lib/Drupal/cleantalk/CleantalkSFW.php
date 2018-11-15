@@ -1,5 +1,6 @@
 <?php
-require_once(dirname(__FILE__) . '/CleantalkHelper.php');
+namespace Drupal\cleantalk;
+
 /*
  * CleanTalk SpamFireWall base class
  * Compatible only with Wordpress.
