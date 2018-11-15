@@ -11,34 +11,6 @@ define("CLEANTALK_USER_AGENT", 'drupal-35');
  */
 
 /**
- * Implements hook_html_head_alter(&$head_elements).
- */ 
-
-
-function cleantalk_page_build(&$page) 
-{  
-    CleantalkFuncs::_cleantalk_apbct_cookies_set();
-
-    $ct_check_def = '0';
-    $ct_check_value = CleantalkFuncs::_cleantalk_get_checkjs_value();
-    $js_template = 'function ctSetCookie(c_name, value, def_value) {
-    document.cookie = c_name + "=" + escape(value.replace(/^def_value$/, value)) + "; path=/";
-    }
-    setTimeout("ctSetCookie(\"%s\", \"%s\", \"%s\");",1000);';
-    $js_addon_body = sprintf($js_template, 'ct_checkjs', $ct_check_value, $ct_check_def);
-    drupal_add_js($js_addon_body,
-        array(
-          'type' => 'inline',
-          'scope' => 'footer',
-          'weight' => 5,
-          'cache' => FALSE,
-          'every_page' => TRUE,
-        )
-    );
-}
-
-
-/**
  * Implements hook_form_BASE_FORM_ID_alter().
  */
 function cleantalk_form_alter(&$form, &$form_state, $form_id) 
@@ -305,6 +277,22 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
 
 function cleantalk_init() 
 {
+    CleantalkFuncs::_cleantalk_apbct_cookies_set();
+
+    $js_template = "var apbct_check_js_val = '%s';";
+    $js_addon_body = sprintf($js_template, CleantalkFuncs::_cleantalk_get_checkjs_value());
+    drupal_add_js($js_addon_body,
+        array(
+          'type' => 'inline',
+          'scope' => 'header',
+          'weight' => 5,
+          'cache' => FALSE,
+          'every_page' => TRUE,
+        )
+    ); 
+
+    drupal_add_js(drupal_get_path('module', 'cleantalk') . '/lib/Drupal/cleantalk/js/apbct-public.js');
+
     $ct_authkey = variable_get('cleantalk_authkey', '');
     if($ct_authkey != '')
     {
@@ -405,21 +393,6 @@ function cleantalk_init()
                     $_POST['mergevars']['EMAIL']='';
                 }
             }
-        }
-    }
-
-    if (path_is_admin(current_path()))
-    {
-        if(isset($_POST['cleantalk_authkey']))
-            CleantalkHelper::api_method_send_empty_feedback($_POST['cleantalk_authkey'], CLEANTALK_USER_AGENT);
-
-        if(isset($_POST['cleantalk_authkey']) && isset($_POST['cleantalk_sfw']) && $_POST['cleantalk_sfw'] == 1)
-        {
-            $sfw = new CleanTalkSFW();
-            $sfw->sfw_update($_POST['cleantalk_authkey']);
-            $sfw->send_logs($_POST['cleantalk_authkey']);
-            variable_set('ct_sfw_last_logs_sent', time());
-            variable_set('ct_sfw_last_updated', time());
         }
     }
 }

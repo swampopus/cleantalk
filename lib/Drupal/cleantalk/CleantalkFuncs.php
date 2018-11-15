@@ -345,9 +345,9 @@ class CleantalkFuncs
 	        'cleantalk_check_comments_automod' => variable_get('cleantalk_check_comments_automod', ''),        
 	        'cleantalk_check_comments_min_approved' => variable_get('cleantalk_check_comments_min_approved', 3),
 	        'cleantalk_check_register' => variable_get('cleantalk_check_register', ''),
-	        'cleantalk_check_wf' => variable_get('cleantalk_check_wf', ''),
+	        'cleantalk_check_webforms' => variable_get('cleantalk_check_webforms', ''),
 	        'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
-	        'cleantalk_ccf' => variable_get('cleantalk_ccf', ''),        
+	        'cleantalk_check_ccf' => variable_get('cleantalk_check_ccf', ''),        
 	        'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
 	        'cleantalk_ssl' => variable_get('cleantalk_ssl', ''),
 	        'cleantalk_link' => variable_get('cleantalk_link', ''),
@@ -357,7 +357,7 @@ class CleantalkFuncs
 	    $ct_request->auth_key = $ct_authkey;
 	    $ct_request->agent = CLEANTALK_USER_AGENT;
 	    $ct_request->response_lang = 'en';
-	    $ct_request->js_on = (isset($_COOKIE['ct_checkjs']) && $_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) ? 1 : 0;
+	    $ct_request->js_on = (isset($_COOKIE['apbct_check_js']) && $_COOKIE['apbct_check_js'] == _cleantalk_get_checkjs_value()) ? 1 : 0;
 	    $ct_request->sender_info = drupal_json_encode(
 	        array(
 	            'cms_lang' => 'en',

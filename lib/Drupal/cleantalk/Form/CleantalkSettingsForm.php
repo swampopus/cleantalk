@@ -115,3 +115,18 @@ function cleantalk_settings_form($form, &$form_state) {
 
   return system_settings_form($form);
 }
+
+function cleantalk_settings_form_validate($form, &$form_state) { 
+  if ($form_state['values']['cleantalk_authkey']){
+    \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($form_state['values']['cleantalk_authkey'], CLEANTALK_USER_AGENT);
+    if ($form_state['values']['cleantalk_sfw'] === 1)
+    {
+      $sfw = new \Drupal\cleantalk\CleanTalkSFW();
+      $sfw->sfw_update($form_state['values']['cleantalk_authkey']);
+      $sfw->send_logs($form_state['values']['cleantalk_authkey']);
+      variable_set('ct_sfw_last_logs_sent', time());
+      variable_set('ct_sfw_last_updated', time());        
+    }
+    
+  }
+}
