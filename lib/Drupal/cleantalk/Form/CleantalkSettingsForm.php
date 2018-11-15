@@ -91,7 +91,7 @@ function cleantalk_settings_form($form, &$form_state) {
 
   $form['cleantalk_check_ccf'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable custom contact forms checking'),
+    '#title' => t('Check custom contact form'),
     '#default_value' => variable_get('cleantalk_check_ccf', 0),
     '#description' => t('Enabling this option will allow you to check all forms on your website.') .
     '<br /><span class="admin-disabled">' .
@@ -118,15 +118,19 @@ function cleantalk_settings_form($form, &$form_state) {
 
 function cleantalk_settings_form_validate($form, &$form_state) { 
   if ($form_state['values']['cleantalk_authkey']){
-    \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($form_state['values']['cleantalk_authkey'], CLEANTALK_USER_AGENT);
-    if ($form_state['values']['cleantalk_sfw'] === 1)
-    {
-      $sfw = new \Drupal\cleantalk\CleanTalkSFW();
-      $sfw->sfw_update($form_state['values']['cleantalk_authkey']);
-      $sfw->send_logs($form_state['values']['cleantalk_authkey']);
-      variable_set('ct_sfw_last_logs_sent', time());
-      variable_set('ct_sfw_last_updated', time());        
-    }
-    
+    $is_valid = \Drupal\cleantalk\CleantalkHelper::api_method__notice_validate_key($form_state['values']['cleantalk_authkey']);
+    if ($is_valid['valid'] !== 1)
+      form_set_error('cleantalk_authkey', t('Access key is not valid.'));
+  }
+}
+function cleantalk_settings_form_submit($form, &$form_state){
+  \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($form_state['values']['cleantalk_authkey'], CLEANTALK_USER_AGENT);
+  if ($form_state['values']['cleantalk_sfw'] === 1)
+  {
+    $sfw = new \Drupal\cleantalk\CleanTalkSFW();
+    $sfw->sfw_update($form_state['values']['cleantalk_authkey']);
+    $sfw->send_logs($form_state['values']['cleantalk_authkey']);
+    variable_set('ct_sfw_last_logs_sent', time());
+    variable_set('ct_sfw_last_updated', time());        
   }
 }
