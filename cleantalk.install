@@ -10,7 +10,7 @@
  */
 function cleantalk_install() 
 {
-	
+  
   db_drop_table('cleantalk_timelabels');
   $cleantalk_timelabels = array(
     'description' => 'Timelabels for admin notification sending.',
@@ -35,68 +35,6 @@ function cleantalk_install()
   );
   db_create_table('cleantalk_timelabels', $cleantalk_timelabels);
 
-  db_drop_table('cleantalk_cids');
-  $cleantalk_cids = array(
-    'description' => 'Comment checking results - CIDs and server responces.',
-    'fields' => array(
-      'cid' => array(
-        'type' => 'int',
-        'length' => 12,
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'ID of checked comment.',
-      ),
-      'ct_request_id' => array(
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'CleanTalk request ID for comment.',
-      ),
-      'ct_result_comment' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'CleanTalk result for comment.',
-      ),
-    ),
-    'primary key' => array('cid'),
-  );
-  db_create_table('cleantalk_cids', $cleantalk_cids);
-
-  db_drop_table('cleantalk_uids');
-  $cleantalk_uids = array(
-    'description' => 'New user checking results - UIDs and server responces.',
-    'fields' => array(
-      'uid' => array(
-        'type' => 'int',
-        'length' => 12,
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'ID of checked user registration.',
-      ),
-      'ct_request_id' => array(
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'CleanTalk request ID for user registration.',
-      ),
-      'ct_result_comment' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'CleanTalk result for user registration.',
-      ),
-    ),
-    'primary key' => array('uid'),
-  );
-  db_create_table('cleantalk_uids', $cleantalk_uids);
-
   db_drop_table('cleantalk_sfw');
   $cleantalk_sfw = array(
     'description' => 'SpamFireWall data.',
@@ -118,9 +56,9 @@ function cleantalk_install()
         'description' => 'Spam mask.',
       ),
     ),
-    'indexes' => [
-      'network' => ['network'],
-    ],
+    'indexes' => array(
+      'network'        => array('network'),
+      ),
   );
   db_create_table('cleantalk_sfw', $cleantalk_sfw);
   
@@ -139,7 +77,7 @@ function cleantalk_install()
         'type' => 'int',
         'description' => 'All entries.'
       ),
-	  'blocked_entries' => array(
+    'blocked_entries' => array(
         'type' => 'int',
         'description' => 'Blocked entries.'
       ),
@@ -175,15 +113,14 @@ function cleantalk_uninstall() {
   }
   variable_del('cleantalk_check_register');
   variable_del('cleantalk_authkey');
-  variable_del('cleantalk_ccf');
+  variable_del('cleantalk_check_ccf');
   variable_del('cleantalk_link');
   variable_del('cleantalk_sfw');
   variable_del('cleantalk_check_comments');
   variable_del('cleantalk_check_comments_automod');
   variable_del('cleantalk_check_comments_min_approved');
-  variable_del('cleantalk_check_wf');
+  variable_del('cleantalk_check_webforms');
   variable_del('cleantalk_check_contact_forms');
-  variable_del('cleantalk_ssl_on');
   variable_del('cleantalk_work_url');
   variable_del('cleantalk_server_url');
   variable_del('cleantalk_server_ttl');
@@ -191,8 +128,6 @@ function cleantalk_uninstall() {
   variable_del('ct_sfw_last_logs_sent');
   variable_del('ct_sfw_last_updated');
   db_drop_table('cleantalk_timelabels');
-  db_drop_table('cleantalk_cids');
-  db_drop_table('cleantalk_uids');
   db_drop_table('cleantalk_sfw');
   db_drop_table('cleantalk_sfw_logs');
   
@@ -241,94 +176,70 @@ function cleantalk_uninstall() {
  * Add new table for SpamFireWall logs
  */
 function cleantalk_update_7300(&$sandbox = NULL){
-	variable_set('ct_sfw_last_logs_sent', time());
-	db_drop_table('cleantalk_sfw_logs');
-	$cleantalk_sfw_logs = array(
-		'description' => 'Comment checking results - CIDs and server responces.',
-		'fields' => array(
-			'ip' => array(
-				'type' => 'varchar',
-				'length' => 15,
-				'not null' => TRUE,
-				'default' => '',
-				'description' => 'IP.'
-			),
-			'all' => array(
-				'type' => 'int',
-				'description' => 'All entries.'
-			),
-			'blocked' => array(
-				'type' => 'int',
-				'description' => 'Blocked entries.'
-			),
-			'timestamp' => array(
-				'type' => 'int',
-				'description' => 'time().'
-			)
-		),
-		'primary key' => array('ip'),
-	);
-	db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
-	
-	return '* New table for SpamFireWall logs added.';
+  variable_set('ct_sfw_last_logs_sent', time());
+  db_drop_table('cleantalk_sfw_logs');
+  $cleantalk_sfw_logs = array(
+    'description' => 'Comment checking results - CIDs and server responces.',
+    'fields' => array(
+      'ip' => array(
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'IP.'
+      ),
+      'all' => array(
+        'type' => 'int',
+        'description' => 'All entries.'
+      ),
+      'blocked' => array(
+        'type' => 'int',
+        'description' => 'Blocked entries.'
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'description' => 'time().'
+      )
+    ),
+    'primary key' => array('ip'),
+  );
+  db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
+  
+  return '* New table for SpamFireWall logs added.';
 }
 
 /**
  * Compatibilty changes for SpamFireWall logs table
  */
 function cleantalk_update_7301(&$sandbox = NULL){
-	variable_set('ct_sfw_last_logs_sent', time());
-	db_drop_table('cleantalk_sfw_logs');
-	$cleantalk_sfw_logs = array(
-		'description' => 'Comment checking results - CIDs and server responces.',
-		'fields' => array(
-			'ip' => array(
-				'type' => 'varchar',
-				'length' => 15,
-				'not null' => TRUE,
-				'default' => '',
-				'description' => 'IP.'
-			),
-			'all_entries' => array(
-				'type' => 'int',
-				'description' => 'All entries.'
-			),
-			'blocked_entries' => array(
-				'type' => 'int',
-				'description' => 'Blocked entries.'
-			),
-			'entries_timestamp' => array(
-				'type' => 'int',
-				'description' => 'time().'
-			)
-		),
-		'primary key' => array('ip'),
-	);
-	db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
-	
-	return '* New table for SpamFireWall logs added.';
-}
-/**
- * Cleantalk inner function - missing CleanTalk library message for install.
- */
-function _cleantalk_library_missing_message_4install($title, $path) {
-  $t = get_t();
-  return $t('"Antispam by CleanTalk" module is DISABLED due to missing or broken CleanTalk library.') .
-    ' <br />' .
-    $t(
-      'Please download <a target="_blank" href="@url">@title</a>,' .
-      ' extract the archive and copy the contents to the following location:' .
-      '<br /><code>@path</code>.',
-      array(
-        '@url' => 'https://github.com/CleanTalk/php-antispam',
-        '@path' => $path,
-        '@title' => $title,
+  variable_set('ct_sfw_last_logs_sent', time());
+  db_drop_table('cleantalk_sfw_logs');
+  $cleantalk_sfw_logs = array(
+    'description' => 'Comment checking results - CIDs and server responces.',
+    'fields' => array(
+      'ip' => array(
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'IP.'
+      ),
+      'all_entries' => array(
+        'type' => 'int',
+        'description' => 'All entries.'
+      ),
+      'blocked_entries' => array(
+        'type' => 'int',
+        'description' => 'Blocked entries.'
+      ),
+      'entries_timestamp' => array(
+        'type' => 'int',
+        'description' => 'time().'
       )
-    ) .
-    ' <br />' .
-    $t(
-       'Make sure 2 files <strong>cleantalk.class.php</strong> and' .
-       ' <strong>JSON.php</strong> are located there.'
-    ) .
-    '<br />';
+    ),
+    'primary key' => array('ip'),
+  );
+  db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
+  
+  return '* New table for SpamFireWall logs added.';
 }

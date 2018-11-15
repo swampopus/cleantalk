@@ -338,7 +338,7 @@ class CleantalkFuncs
 	    $ct->server_url = $ct_ws['server_url'];
 	    $ct->server_ttl = $ct_ws['server_ttl'];
 	    $ct->server_changed = $ct_ws['server_changed'];
-	    $ct->ssl_on = variable_get('cleantalk_ssl_on', 0);
+	    
 	    $ct_options=Array(
 	        'access_key' => $ct_authkey,
 	        'cleantalk_check_comments' => variable_get('cleantalk_check_comments', ''),
