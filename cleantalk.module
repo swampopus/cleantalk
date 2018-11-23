@@ -1,5 +1,5 @@
 <?php
-use Drupal\cleantalk\CleanTalkSFW;
+use Drupal\cleantalk\CleantalkSFW;
 use Drupal\cleantalk\CleantalkCustomConfig;
 use Drupal\cleantalk\CleantalkFuncs;
 
