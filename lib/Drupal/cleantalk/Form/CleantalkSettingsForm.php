@@ -127,7 +127,7 @@ function cleantalk_settings_form_submit($form, &$form_state){
   \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($form_state['values']['cleantalk_authkey'], CLEANTALK_USER_AGENT);
   if ($form_state['values']['cleantalk_sfw'] === 1)
   {
-    $sfw = new \Drupal\cleantalk\CleanTalkSFW();
+    $sfw = new \Drupal\cleantalk\CleantalkSFW();
     $sfw->sfw_update($form_state['values']['cleantalk_authkey']);
     $sfw->send_logs($form_state['values']['cleantalk_authkey']);
     variable_set('ct_sfw_last_logs_sent', time());

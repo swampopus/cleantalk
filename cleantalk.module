@@ -392,7 +392,7 @@ function cleantalk_boot()
         $ct_key = variable_get('cleantalk_authkey', '');
         if($ct_key != '')
         {
-            $sfw = new CleanTalkSFW();
+            $sfw = new CleantalkSFW();
 
             $ct_sfw_last_logs_sent = variable_get( 'ct_sfw_last_logs_sent', null);
             if($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600))
