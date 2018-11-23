@@ -328,7 +328,7 @@ class CleantalkFuncs
 	    }    
 
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
-	    $ct_ws = _cleantalk_get_ws();
+	    $ct_ws = self::_cleantalk_get_ws();
 
 	    $user_agent = $_SERVER['HTTP_USER_AGENT'];
 	    $refferrer = $_SERVER['HTTP_REFERER'];
@@ -357,7 +357,7 @@ class CleantalkFuncs
 	    $ct_request->auth_key = $ct_authkey;
 	    $ct_request->agent = CLEANTALK_USER_AGENT;
 	    $ct_request->response_lang = 'en';
-	    $ct_request->js_on = (isset($_COOKIE['apbct_check_js']) && $_COOKIE['apbct_check_js'] == _cleantalk_get_checkjs_value()) ? 1 : 0;
+	    $ct_request->js_on = (isset($_COOKIE['apbct_check_js']) && $_COOKIE['apbct_check_js'] == self::_cleantalk_get_checkjs_value()) ? 1 : 0;
 	    $ct_request->sender_info = drupal_json_encode(
 	        array(
 	            'cms_lang' => 'en',
@@ -366,7 +366,7 @@ class CleantalkFuncs
 	            'USER_AGENT' => $user_agent,
 	            'ct_options' => drupal_json_encode($ct_options),
 	            'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
-	            'cookies_enabled' => apbct_cookies_test(),
+	            'cookies_enabled' => self::_cleantalk_apbct_cookies_set(),
 	        )
 	    );
 	    $ct_request->sender_email = isset($spam_check['sender_email']) ? $spam_check['sender_email'] : '';
@@ -374,7 +374,7 @@ class CleantalkFuncs
 	    $ct_request->sender_ip = CleantalkHelper::ip_get(array('real'), false);
 	    $ct_request->x_forwarded_for = CleantalkHelper::ip_get(array('x_forwarded_for'), false);
 	    $ct_request->x_real_ip       = CleantalkHelper::ip_get(array('x_real_ip'), false);
-	    $ct_request->submit_time = apbct_submit_time_test();
+	    $ct_request->submit_time = self::_cleantalk_get_submit_time();
 
 	    switch ($spam_check['type']) 
 	    {
@@ -434,7 +434,7 @@ class CleantalkFuncs
 	        $ret_val['ct_request_id'] = $ct_result->id;
 
 	        if ($ct->server_change) 
-	            _cleantalk_set_ws($ct->work_url, $ct->server_ttl, REQUEST_TIME);
+	            self::_cleantalk_set_ws($ct->work_url, $ct->server_ttl, REQUEST_TIME);
 
 	        // First check errstr flag.
 	        if (!empty($ct_result->errstr) || (!empty($ct_result->inactive) && $ct_result->inactive == 1)) 
@@ -448,9 +448,9 @@ class CleantalkFuncs
 	            $err_title = $_SERVER['SERVER_NAME'] . ' - CleanTalk hook error';
 
 	            if (!empty($ct_result->errstr)) 
-	                $ret_val['errstr'] = _cleantalk_filter_response($ct_result->errstr);
+	                $ret_val['errstr'] = self::_cleantalk_filter_response($ct_result->errstr);
 	            else 
-	                $ret_val['errstr'] = _cleantalk_filter_response($ct_result->comment);
+	                $ret_val['errstr'] = self::_cleantalk_filter_response($ct_result->comment);
 
 	            $send_flag = FALSE;
 
@@ -498,21 +498,21 @@ class CleantalkFuncs
 	            // Not spammer.
 	            $ret_val['allow'] = 1;
 	            // Store request_id in globals to store it in DB later.
-	            _cleantalk_ct_result('set', $ct_result->id, $ret_val['allow']);
+	            self::_cleantalk_ct_result('set', $ct_result->id, $ret_val['allow']);
 	            // Don't store 'ct_result_comment', means good comment.
 	        }
 	        else 
 	        {
 	            // Spammer.
 	            $ret_val['allow'] = 0;
-	            $ret_val['ct_result_comment'] = _cleantalk_filter_response($ct_result->comment);
+	            $ret_val['ct_result_comment'] = self::_cleantalk_filter_response($ct_result->comment);
 
 	            // Check stop_queue flag.
 	            if ($spam_check['type'] == 'comment') 
 	            {
 	                // Store request_id and comment in static to store them in DB later.
 	                // Store 'ct_result_comment' - means bad comment.
-	                _cleantalk_ct_result('set', $ct_result->id, $ret_val['allow'], $ret_val['ct_result_comment']);
+	                self::_cleantalk_ct_result('set', $ct_result->id, $ret_val['allow'], $ret_val['ct_result_comment']);
 	                $ret_val['stop_queue'] = $ct_result->stop_queue;
 	            }
 	        }        
