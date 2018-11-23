@@ -297,7 +297,7 @@ class CleantalkFuncs
 	 * Cleantalk inner function - performs antispam checking.
 	 */
 	static public function _cleantalk_check_spam($spam_check) {
-	    global $user, $cleantalk_executed;
+	    global $user, $cleantalk_executed, $language;
 
 	    if (empty($spam_check) || !isset($spam_check['type']))
 	        return;
@@ -356,15 +356,19 @@ class CleantalkFuncs
 	    $ct_request = new CleantalkRequest();
 	    $ct_request->auth_key = $ct_authkey;
 	    $ct_request->agent = CLEANTALK_USER_AGENT;
-	    $ct_request->response_lang = 'en';
+	    $ct_request->response_lang = $language->language;
 	    $ct_request->js_on = (isset($_COOKIE['apbct_check_js']) && $_COOKIE['apbct_check_js'] == self::_cleantalk_get_checkjs_value()) ? 1 : 0;
 	    $ct_request->sender_info = drupal_json_encode(
 	        array(
-	            'cms_lang' => 'en',
+	            'cms_lang' => $language->language,
 	            'REFFERRER' => $refferrer,
 	            'post_url' => $refferrer,
 	            'USER_AGENT' => $user_agent,
 	            'ct_options' => drupal_json_encode($ct_options),
+	            'js_timezone' => (isset($_COOKIE['apbct_timezone']) ? $_COOKIE['apbct_timezone'] : ''),
+                'mouse_cursor_positions' => (isset($_COOKIE['apbct_pointer_data']) ? json_decode($_COOKIE['apbct_pointer_data']) : ''),
+                'key_press_timestamp' => (isset($_COOKIE['apbct_fkp_timestamp']) ? $_COOKIE['apbct_fkp_timestamp'] : ''),
+                'page_set_timestamp' => (isset($_COOKIE['apbct_ps_timestamp']) ? $_COOKIE['apbct_ps_timestamp'] : 0),	            
 	            'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
 	            'cookies_enabled' => self::_cleantalk_apbct_cookies_set(),
 	        )

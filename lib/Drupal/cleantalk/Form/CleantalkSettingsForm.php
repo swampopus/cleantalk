@@ -91,7 +91,7 @@ function cleantalk_settings_form($form, &$form_state) {
 
   $form['cleantalk_check_ccf'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Check custom contact form'),
+    '#title' => t('Check custom forms'),
     '#default_value' => variable_get('cleantalk_check_ccf', 0),
     '#description' => t('Enabling this option will allow you to check all forms on your website.') .
     '<br /><span class="admin-disabled">' .
