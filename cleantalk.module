@@ -23,7 +23,7 @@ function cleantalk_form_alter(&$form, &$form_state, $form_id)
  */
 function cleantalk_validate_register(&$form, &$form_state) 
 {
-    if (variable_get('cleantalk_check_register', 0))
+    if (variable_get('cleantalk_check_register', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents']))
     {
         $spam_check = array();
 
@@ -44,53 +44,22 @@ function cleantalk_validate_register(&$form, &$form_state)
  */
 function cleantalk_validate_comment(&$form, &$form_state) 
 {
-    if (variable_get('cleantalk_check_comments', 0))
+    if (variable_get('cleantalk_check_comments', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents']))
     {
         $spam_check = array();
 
-        if (isset($form_state['values']) && is_array($form_state['values'])) 
-        {
-            $base_form_id = $form_state['build_info']['base_form_id'];
+        // Fill parameters array for usual comment
+        $spam_check['type'] = 'comment';
+        $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
+        if (isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) && isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) && isset($form_state['values']['comment_body'][$comment_lang][0])) 
+            $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
 
-            if ($base_form_id == 'comment_form') 
-            {
-                // Fill parameters array for usual comment
-                $spam_check['type'] = 'comment';
-                $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-                if (isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) && isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) && isset($form_state['values']['comment_body'][$comment_lang][0])) 
-                    $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+        // Values below can be empty, we'll check as comment because of $base_form_id
+        $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
+        $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
+        $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
+        $spam_check['message_body'] = (is_array($comment_body) && isset($comment_body['value'])) ? $comment_body['value'] : ''; 
 
-                // Values below can be empty, we'll check as comment because of $base_form_id
-                $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
-                $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
-                $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
-                $spam_check['message_body'] = (is_array($comment_body) && isset($comment_body['value'])) ? $comment_body['value'] : '';
-            } 
-            else if ($base_form_id == 'node_form') 
-            {
-                // Fill paramaters array for something looking like a comment
-                $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-                if (isset($form_state['values']['body']) && is_array($form_state['values']['body']) && isset($form_state['values']['body'][$comment_lang]) && is_array($form_state['values']['body'][$comment_lang]) && isset($form_state['values']['body'][$comment_lang][0])) 
-                {
-                    $comment_body = $form_state['values']['body'][$comment_lang][0];
-                    // Values below cannot be empty, we won't check as comment because of $base_form_id
-                    if (!empty($form_state['values']['mail']))
-                        $spam_check['sender_email'] = $form_state['values']['mail'];
-
-                    if (!empty($form_state['values']['name'])) 
-                        $spam_check['sender_nickname'] = $form_state['values']['name'];
-
-                    if (!empty($form_state['values']['title'])) 
-                        $spam_check['message_title'] = $form_state['values']['title'];
-                    
-                    if (is_array($comment_body) && isset($comment_body['value'])) 
-                        $spam_check['message_body'] = $comment_body['value'];
-                    
-                    if (!empty($spam_check)) 
-                        $spam_check['type'] = 'node';                
-                }
-            }
-        }
         $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
@@ -106,9 +75,10 @@ function cleantalk_validate_comment(&$form, &$form_state)
  */
 function cleantalk_validate_contact_message(&$form, &$form_state) 
 {
-    if (variable_get('cleantalk_check_contact_forms',0))
+    if (variable_get('cleantalk_check_contact_forms',0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents']))
     {
         $spam_check = array();
+
         $spam_check['type'] = 'contact';
         $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
         $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
@@ -127,21 +97,24 @@ function cleantalk_validate_contact_message(&$form, &$form_state)
  */
 function cleantalk_validate_webform(&$form, &$form_state) 
 {
-    if (variable_get('cleantalk_check_webforms',0))
+    if (variable_get('cleantalk_check_webforms',0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents']))
     {
-        $sender_email = '';
-        $sender_nickname = '';
-        $subject = '';
-        $message = '';
-        $contact_form = true;
-        get_fields_any($sender_email, $message, $sender_nickname, $subject, $contact_form, $_POST['submitted']);
-
         $spam_check = array();
+        $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
+
         $spam_check['type'] = 'webform';
-        $spam_check['sender_email'] = !empty($sender_email) ? $sender_email : '';
-        $spam_check['sender_nickname'] = !empty($sender_nickname) ? $sender_nickname : '';
-        $spam_check['message_title'] = !empty($subject) ? $subject : '';
-        $spam_check['message_body'] = !empty($message) ? $message : '';
+        if (empty($form_state['values']['submitted']['e_mail']))
+            $spam_check['sender_email'] = ($ct_temp_msg_data['email']    ? $ct_temp_msg_data['email']    : '');
+        else $spam_check['sender_email'] = $form_state['values']['submitted']['e_mail'];
+        if (empty($form_state['values']['submitted']['name']))
+            $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname']    ? $ct_temp_msg_data['nickname']    : '');
+        else $spam_check['sender_nickname'] = $form_state['values']['submitted']['name'];        
+        if (empty($form_state['values']['submitted']['subject']))
+            $spam_check['message_title'] = ($ct_temp_msg_data['subject']    ? $ct_temp_msg_data['subject']    : '');
+        else $spam_check['message_title'] = $form_state['values']['submitted']['subject'];  
+        if (empty($form_state['values']['submitted']['message']))
+            $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
+        else $spam_check['message_body'] = $form_state['values']['submitted']['message'];             
 
         $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
@@ -235,20 +208,12 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
         $form['#validate'][] = 'cleantalk_validate_register';    
     else 
     {
-        if (preg_match('|contact_(.*?)_form|', $form_id)) 
-            $form['#validate'][] = 'cleantalk_validate_contact_message'; 
-        elseif (preg_match('|webform_(.*?)_form|', $form_id))     
+        if(preg_match('|comment(.*?)_form|', $form_id))
+            $form['#validate'][] = 'cleantalk_validate_comment'; 
+        if (preg_match('|contact(.*?)_form|', $form_id))     
+            $form['#validate'][] = 'cleantalk_validate_contact_message';
+        if (preg_match('|webform(.*?)_form|', $form_id))
             $form['#validate'][] = 'cleantalk_validate_webform';
-        else 
-        {
-            //check if the node comments are open
-            if(isset($form['#node']) && !empty($form['#node'])) 
-            {
-                $node = $form['#node'];
-                if(isset($node->comment) && $node->comment != 1)
-                    $form['#validate'][] = 'cleantalk_validate_comment';
-            }
-        }
     } 
 }
 
@@ -275,122 +240,10 @@ function cleantalk_init()
 
     drupal_add_js(drupal_get_path('module', 'cleantalk') . '/lib/Drupal/cleantalk/js/apbct-public.js');
 
-    $ct_authkey = variable_get('cleantalk_authkey', '');
+    $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
     if($ct_authkey != '')
     {
-        $ct_ccf = variable_get('cleantalk_ccf', 0);
-        if(sizeof($_POST)>0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && $ct_ccf==1) //Custom Contact forms
-        {
-            $sender_email = '';
-            $sender_nickname = '';
-            $subject = '';
-            $message = '';
-            $contact_form = true;
-            get_fields_any($sender_email, $message, $sender_nickname, $subject, $contact_form, $_POST);
-    
-            if($sender_email!='')
-            {
-                if (!isset($_COOKIE['ct_checkjs'])) {
-                    $checkjs = NULL;
-                } elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
-                    $checkjs = 1;
-                } else {
-                    $checkjs = 0;
-                }
-                $data=Array(
-                    'type' => 'comment',
-                    'auth_key' => $ct_authkey,
-                    'method_name' => 'check_message',
-                    'message' => $message,
-                    'example' => null,
-                    'agent'=> CLEANTALK_USER_AGENT,
-                    'sender_ip'=>$_SERVER['REMOTE_ADDR'],
-                    'sender_email'=>$sender_email,
-                    'sender_nickname'=>$sender_nickname,
-                    'message_title'=>$subject,
-                    'message_body'=>'',
-                    'example_title'=>'',
-                    'example_body'=>'',
-                    'example_comments'=>'',
-                    'comment_body'=>'',
-                    'js_on'=>$checkjs
-                );
-                if(!function_exists('drupal_json_encode')) {
-                    include_once DRUPAL_ROOT . '/includes/common.inc';
-                }
-                $result = _cleantalk_check_spam($data);
-                if($result['allow']===0) {
-                    drupal_set_message($result['ct_result_comment'],'error');
-                }
-            }
-        }
-
-        if(isset($_POST['mergevars'])) {
-            $sender_email = null;
-            $message = '';
-      
-            foreach ($_POST['mergevars'] as $key => $value) {
-                if ($sender_email === null && preg_match("/^\S+@\S+\.\S+$/", $value)) {
-                    $sender_email = $value;
-                } else {
-                    $message.="$value\n";
-                }
-            }
-      
-            if($sender_email!=null) {
-                $url = 'http://moderate.cleantalk.org/api2.0';
-                $ct_authkey = variable_get('cleantalk_authkey', '');
-                if (!isset($_COOKIE['ct_checkjs'])) {
-                    $checkjs = NULL;
-                } elseif ($_COOKIE['ct_checkjs'] == _cleantalk_get_checkjs_value()) {
-                    $checkjs = 1;
-                } else {
-                    $checkjs = 0;
-                }
-                $data=Array(
-                    'type'=>'comment',
-                    'auth_key'=>$ct_authkey,
-                    'method_name'=> 'check_message',
-                    'message'=>$message,
-                    'example'=>null,
-                    'agent'=> CLEANTALK_USER_AGENT,
-                    'sender_ip'=>$_SERVER['REMOTE_ADDR'],
-                    'sender_email'=>$sender_email,
-                    'sender_nickname'=>'',
-                    'message_title'=>'',
-                    'message_body'=>'',
-                    'example_title'=>'',
-                    'example_body'=>'',
-                    'example_comments'=>'',
-                    'comment_body'=>'',
-                    'js_on'=>$checkjs
-                );
-        
-                if(!function_exists('drupal_json_encode')) {
-                    include_once DRUPAL_ROOT . '/includes/common.inc';
-                }
-                $result=_cleantalk_check_spam($data);
-                if($result['allow']===0) {
-                drupal_set_message($result['ct_result_comment'],'error');
-                    $_POST['mergevars']['EMAIL']='';
-                }
-            }
-        }
-    }
-}
-
-/**
- * Implements hook_boot()
- */
-
-function cleantalk_boot() 
-{    
-    $is_sfw = variable_get('cleantalk_sfw', 0);
-
-    if($is_sfw == 1)
-    {
-        $ct_key = variable_get('cleantalk_authkey', '');
-        if($ct_key != '')
+        if(variable_get('cleantalk_sfw', 0))
         {
             $sfw = new CleantalkSFW();
 
@@ -398,14 +251,14 @@ function cleantalk_boot()
             if($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600))
             {
                 variable_set('ct_sfw_last_logs_sent', time());
-                $sfw->send_logs($ct_key);
+                $sfw->send_logs($ct_authkey);
             }
 
             $ct_sfw_last_updated = variable_get( 'ct_sfw_last_updated', null);
             if($ct_sfw_last_updated && (time()-$ct_sfw_last_updated > 86400))
             {
                 variable_set('ct_sfw_last_updated', time());
-                $sfw->sfw_update($ct_key);
+                $sfw->sfw_update($ct_authkey);
             }
 
             $is_sfw_check = true;
@@ -414,7 +267,7 @@ function cleantalk_boot()
                 
             foreach($sfw->ip_array as $key => $value)
             {
-                if(isset($_COOKIE['apbct_sfw_pass_key']) && $_COOKIE['apbct_sfw_pass_key'] == md5($value . trim($ct_key)))
+                if(isset($_COOKIE['apbct_sfw_pass_key']) && $_COOKIE['apbct_sfw_pass_key'] == md5($value . $ct_authkey))
                 {
                   $is_sfw_check=false;
                   if(isset($_COOKIE['apbct_sfw_passed']))
@@ -431,11 +284,28 @@ function cleantalk_boot()
                 if($sfw->result)
                 {
                     $sfw->sfw_update_logs($sfw->blocked_ip, 'blocked');
-                    $sfw->sfw_die(trim($ct_key));
+                    $sfw->sfw_die($ct_authkey);
                 }
             }
         }
-    }    
+        if(sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && variable_get('cleantalk_ccf', 0)) //Custom Contact forms
+        {
+            $spam_check = array();
+            $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
+
+            $spam_check['type'] = 'custom_contact_form';
+
+            $spam_check['sender_email'] = ($ct_temp_msg_data['email']    ? $ct_temp_msg_data['email']    : '');
+            $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname']    ? $ct_temp_msg_data['nickname']    : '');       
+            $spam_check['message_title'] = ($ct_temp_msg_data['subject']    ? $ct_temp_msg_data['subject']    : '');
+            $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
+
+            $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+
+            if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
+                drupal_set_message($spam_result['ct_result_comment'],'error');     
+        }
+    }
 }
 
 /*
@@ -444,37 +314,27 @@ function cleantalk_boot()
 
 function cleantalk_uc_order($op, $order, $arg2) 
 {
-    $email = '';
-    $message = '';
-    $nickname = '';
-    $subject = '';
-    cleantalk_get_fields_any($email, $message, $nickname, $subject, $_POST);
+    $spam_check = array();
+    $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
-    if($email!='' && $op!='total' && $op!='presave' && $op!='save') 
+    $spam_check['type'] = 'custom_contact_form';
+
+    $spam_check['sender_email'] = ($ct_temp_msg_data['email']    ? $ct_temp_msg_data['email']    : '');
+    $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname']    ? $ct_temp_msg_data['nickname']    : '');       
+    $spam_check['message_title'] = ($ct_temp_msg_data['subject']    ? $ct_temp_msg_data['subject']    : '');
+    $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
+
+    $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
     {
-        $spam_check = array();
-        $spam_check['type'] = 'comment';
-        $spam_check['sender_email'] = $email;
-        $spam_check['sender_nickname'] = $nickname;
-        $spam_check['message_title'] = $subject;
-        $spam_check['message_body'] = $message;
-        $spam_check['example_title'] = '';
-        $spam_check['example_body'] = '';
-        $spam_check['example_comments'] = '';
-
-
-        $spam_result = _cleantalk_check_spam($spam_check);
-
-        if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1 && $spam_result['stop_queue'] == 1) 
+        if(strpos($_SERVER['REQUEST_URI'], 'ajax')!==false)
         {
-            if(strpos($_SERVER['REQUEST_URI'], 'ajax')!==false)
-            {
-                print $spam_result['ct_result_comment'];
-                drupal_exit();
-            } 
-            else 
-                _cleantalk_die($spam_result['ct_result_comment']);
-        }
+            print $spam_result['ct_result_comment'];
+            drupal_exit();
+        } 
+        else 
+            _cleantalk_die($spam_result['ct_result_comment']);     
     }
 }
 

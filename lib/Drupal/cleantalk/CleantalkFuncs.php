@@ -141,6 +141,12 @@ class CleantalkFuncs
 	    // Contact Form 7
 	    '_wpcf7',
 	    'avatar__file_image_data',
+	    'form_build_id',
+	    'form_token',
+	    'op',
+	    'details_page_num',
+	    'details_page_count',
+	    'details_finished',
 	  );
 	    $fields_exclusions = CleantalkCustomConfig::get_fields_exclusions();
 	    if ($fields_exclusions)
@@ -304,7 +310,8 @@ class CleantalkFuncs
 
 	    if ($cleantalk_executed)
 	    	return;
-
+		if (user_access('administer modules') && path_is_admin(current_path()))
+			return;
 	    // Don't check reged user with >= 'cleantalk_check_comments_min_approved' approved msgs.
 	    if ($user->uid > 0 && module_exists('comment')) 
 	    {
@@ -329,9 +336,6 @@ class CleantalkFuncs
 
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
 	    $ct_ws = self::_cleantalk_get_ws();
-
-	    $user_agent = $_SERVER['HTTP_USER_AGENT'];
-	    $refferrer = $_SERVER['HTTP_REFERER'];
 
 	    $ct = new Cleantalk();
 	    $ct->work_url = $ct_ws['work_url'];
@@ -361,9 +365,9 @@ class CleantalkFuncs
 	    $ct_request->sender_info = drupal_json_encode(
 	        array(
 	            'cms_lang' => $language->language,
-	            'REFFERRER' => $refferrer,
-	            'post_url' => $refferrer,
-	            'USER_AGENT' => $user_agent,
+	            'REFFERRER' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null,
+	            'page_url'  => isset($_SERVER['SERVER_NAME'], $_SERVER['REQUEST_URI']) ? htmlspecialchars($_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']) : null,
+	            'USER_AGENT' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null,
 	            'ct_options' => drupal_json_encode($ct_options),
 	            'js_timezone' => (isset($_COOKIE['apbct_timezone']) ? $_COOKIE['apbct_timezone'] : ''),
                 'mouse_cursor_positions' => (isset($_COOKIE['apbct_pointer_data']) ? json_decode($_COOKIE['apbct_pointer_data']) : ''),
@@ -372,6 +376,12 @@ class CleantalkFuncs
 	            'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
 	            'cookies_enabled' => self::_cleantalk_apbct_cookies_set(),
 	        )
+	    );
+	    $ct_request->post_info = drupal_json_encode(
+		    array(
+		      'comment_type' => $spam_check['type'] . '_feedback',
+		      'post_url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null,
+		    )
 	    );
 	    $ct_request->sender_email = isset($spam_check['sender_email']) ? $spam_check['sender_email'] : '';
 	    $ct_request->sender_nickname = isset($spam_check['sender_nickname']) ? $spam_check['sender_nickname']: '' ;
@@ -384,35 +394,17 @@ class CleantalkFuncs
 	    {
 	        case 'comment':
 	        case 'contact':
-	        case 'node':
 	        case 'webform':
+	        case 'custom_contact_form':
 	            $timelabels_key = 'mail_error_comment';
+        		if (isset($spam_check['message_title']) && is_array($spam_check['message_title']))
+					$spam_check['message_title'] = implode("\n\n", $spam_check['message_title']); 
+
+        		if (isset($spam_check['message_body']) && is_array($spam_check['message_body']))
+					$spam_check['message_body'] = implode("\n\n", $spam_check['message_body']); 
 
 	            $ct_request->message = $spam_check['message_title'] . " \n\n" .
 	            preg_replace('/\s+/', ' ',str_replace("<br />", " ", $spam_check['message_body']));
-
-	            // Additional info.
-	            $post_info = '';
-	            if ($spam_check['type'] == 'contact') 
-	                $a_post_info['comment_type'] = 'contact';
-	            else if ($spam_check['type'] == 'node') 
-	                $a_post_info['comment_type'] = 'node';
-	            else if ($spam_check['type'] == 'webform') 
-	                $a_post_info['comment_type'] = 'webform';
-	            else 
-	                $a_post_info['comment_type'] = 'comment';
-	            
-
-	            // JSON format.
-	            $post_info = drupal_json_encode($a_post_info);
-
-	            // Plain text format.
-	            if ($post_info === FALSE) 
-	                $post_info = '';
-
-	            $ct_request->post_info = $post_info;
-	            // Example is obsolete now.
-	            $ct_request->example = '';
 
 	            $ct_result = $ct->isAllowMessage($ct_request);
 	        break;
@@ -587,7 +579,7 @@ class CleantalkFuncs
 		if ($submitHandlers && is_array($submitHandlers))
 		{
 			foreach ($submitHandlers as $handler)
-				if ($handler === '::save')
+				if ($handler === 'submit')
 					return true;
 		}
 		return false;
