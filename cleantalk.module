@@ -198,9 +198,9 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
     if(variable_get('cleantalk_link', 0) != 0)
     {
         $form['terms_of_use'] = array(
-        '#type' => 'item',
-        '#markup' => t("<a href='https://cleantalk.org/drupal-anti-spam-module-wo-captcha'>Drupal spam</a> blocked by CleanTalk."),
-        '#required' => FALSE,
+            '#type' => 'item',
+            '#markup' => t("<a href='https://cleantalk.org/drupal-anti-spam-module-wo-captcha'>Drupal spam</a> blocked by CleanTalk."),
+            '#required' => FALSE,
         );
     }
 
@@ -337,101 +337,3 @@ function cleantalk_uc_order($op, $order, $arg2)
             _cleantalk_die($spam_result['ct_result_comment']);     
     }
 }
-
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function cleantalk_form_user_filter_form_alter(&$form, &$form_state, $form_id) 
-{
-    $ct_authkey = variable_get('cleantalk_authkey', '');
-    if (!empty($ct_authkey)) 
-    {
-        $form['actions']['find_spammers']  = array(
-        '#type' => 'submit',
-        '#value' => t('Check for spammers'),
-        '#submit' => array('cleantalk_find_spammers'),
-        );
-    }
-}
-
-/**
- * Process submit of 'Check for spammers' button on user_filter_form.
- */
-function cleantalk_find_spammers(&$form, &$form_state) 
-{
-    if (user_access('administer modules') && path_is_admin(current_path()))
-    {
-        $ct_authkey = variable_get('cleantalk_authkey', '');
-        if (empty($ct_authkey)) 
-            return;
-
-        $op = $form_state['values']['op'];
-        switch ($op) 
-        {
-            case t('Check for spammers'):
-                // Load spammer role
-                $spammer_role_name = 'spammer';
-                $spammer_role = user_role_load_by_name($spammer_role_name);
-                if ($spammer_role !== FALSE && is_object($spammer_role) && isset($spammer_role->rid)) 
-                {
-                    $is_spammer_defined = FALSE;
-                    if (isset($_SESSION['user_overview_filter']) && is_array($_SESSION['user_overview_filter'])) 
-                    {
-                        foreach ($_SESSION['user_overview_filter'] as $filter)
-                            if (is_array($filter) && isset($filter[0]) && $filter[0] == 'role' && isset($filter[1]) && $filter[1] == $spammer_role->rid) 
-                                $is_spammer_defined = TRUE;
-                    }
-                    if (!$is_spammer_defined) 
-                        $_SESSION['user_overview_filter'][] = array('role', $spammer_role->rid);
-                
-
-                    // Get all accounts
-                    $accounts = user_load_multiple(FALSE);
-
-                    // Fill data for spam check
-                    $data = array();
-                    foreach ($accounts as $account) 
-                    {
-                        // Skip adding the role to the user if they already have it.
-                        if ($account !== FALSE && !isset($account->roles[$spammer_role->rid]) && isset($account->mail)) 
-                            array_push($data, $account->mail);
-                    }
-                    $data=implode(',',$data);
-
-                    $request=Array();
-                    $request['method_name'] = 'spam_check_cms';
-                    $request['auth_key'] = $ct_authkey;
-                    $request['data'] = $data;
-                    $url='https://api.cleantalk.org';
-                    $result=CleantalkHelper::api_send_request($request);
-
-                    $result=json_decode($result);
-
-                    if(isset($result->error_message))
-                        drupal_set_message($result->error_message,'error');
-                    else
-                    {
-                        // Add roles for spam accounts
-                        foreach ($accounts as $account) 
-                        {
-                            // Skip adding the role to the user if they already have it.
-                            if ($account !== FALSE && !isset($account->roles[$spammer_role->rid]) && isset($account->mail)) 
-                            {
-                                $uim = $account->mail;
-                                if(isset($result->data->$uim) && $result->data->$uim->appears==1)
-                                {
-                                    $roles = $account->roles + array($spammer_role->rid => $spammer_role_name);
-                                    // For efficiency manually save the original account before applying
-                                    // any changes.
-                                    $account->original = clone $account;
-                                    user_save($account, array('roles' => $roles));
-                                }
-                            }
-                        }
-                    }
-                }
-            break;
-        }    
-    }  
-} 
