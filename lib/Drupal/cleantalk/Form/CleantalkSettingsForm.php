@@ -118,15 +118,16 @@ function cleantalk_settings_form($form, &$form_state) {
 
 function cleantalk_settings_form_validate($form, &$form_state) { 
   if ($form_state['values']['cleantalk_authkey']){
-    $is_valid = \Drupal\cleantalk\CleantalkHelper::api_method__notice_validate_key($form_state['values']['cleantalk_authkey']);
+    $cleantalk_auth_key = trim($form_state['values']['cleantalk_authkey']);
+    $is_valid = \Drupal\cleantalk\CleantalkHelper::api_method__notice_validate_key($cleantalk_auth_key));
     if ($is_valid['valid'] === 1)
     {
-      \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($form_state['values']['cleantalk_authkey'], CLEANTALK_USER_AGENT);
+      \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
       if ($form_state['values']['cleantalk_sfw'] === 1)
       {
         $sfw = new \Drupal\cleantalk\CleantalkSFW();
-        $sfw->sfw_update($form_state['values']['cleantalk_authkey']);
-        $sfw->send_logs($form_state['values']['cleantalk_authkey']);
+        $sfw->sfw_update($cleantalk_auth_key);
+        $sfw->send_logs($cleantalk_auth_key);
         variable_set('ct_sfw_last_logs_sent', time());
         variable_set('ct_sfw_last_updated', time());        
       }
