@@ -88,28 +88,11 @@ function cleantalk_install()
     'primary key' => array('ip'),
   );
   db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
-
-  $myRoles = array('spammer');
-  $roles = user_roles();
-  $myRole = new stdClass();
-  foreach ($myRoles as $r){
-    if(!in_array($r, $roles)){
-      $myRole->name = $r;
-      user_role_save($myRole);
-    }
-  }
 }
 /**
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
-  $myRoles = array('spammer');
-  $roles = user_roles();
-  foreach ($myRoles as $r){
-    if(in_array($r, $roles)){
-      user_role_delete($r);
-    }
-  }
   variable_del('cleantalk_check_register');
   variable_del('cleantalk_authkey');
   variable_del('cleantalk_check_ccf');

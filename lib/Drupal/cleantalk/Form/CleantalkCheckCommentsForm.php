@@ -76,32 +76,39 @@ function cleantalk_check_comments_form_submit($form, &$form_state)
 function cleantalk_find_spam_comments()
 {		
     // Get all comments
-    $comments = db_query("SELECT c.cid, c.uid, u.mail, c.name, c.subject, c.created, c.status FROM {comment} c INNER JOIN {users} u on c.uid = u.uid");
-	$data = array();
+    $comments = db_query("SELECT c.cid, c.uid, u.mail, c.name, c.subject, c.created, c.status FROM {comment} c INNER JOIN {users} u on c.uid = u.uid")->fetchAll();
 	$spam_comments = array();	
-    foreach ($comments as $comment) 
+
+    if ($comments && count($comments) > 0)
     {
-        // Skip adding the role to the user if they already have it.
-        if ($comment !== FALSE && isset($comment->mail)) 
-            array_push($data, $comment->mail);
-    }
-    $data=implode(',',$data);
-    $result=\Drupal\cleantalk\CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);	
-    if(isset($result['error_message']))
-        drupal_set_message($result['error_message'],'error');
-    else
-    {
-		foreach($result as $key => $value)
-		{
-			if ($value['appears'] == '1' )
+		$data = array();
+
+	    foreach ($comments as $comment) 
+	    {
+	        // Skip adding the role to the user if they already have it.
+	        if ($comment !== FALSE && isset($comment->mail)) 
+	            array_push($data, $comment->mail);
+	    }
+	    $data=implode(',',$data);
+	    $result=\Drupal\cleantalk\CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);	
+
+	    if(isset($result['error_message']))
+	        drupal_set_message($result['error_message'],'error');
+	    else
+	    {
+			foreach($result as $key => $value)
 			{
-				foreach ($comments as $comment)
+				if ($value['appears'] == '1' )
 				{
-					if ($comment->mail == $key)
-						$spam_comments[] = $comment;
-				}
-			}              
-		}        	
+					foreach ($comments as $comment)
+					{
+						if ($comment->mail == $key)
+							$spam_comments[] = $comment;
+					}
+				}              
+			}        	
+	    }   	
     }
-    return $spam_comments;	
+
+	return $spam_comments;	
 }

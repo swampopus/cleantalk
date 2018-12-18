@@ -120,7 +120,8 @@ function cleantalk_settings_form_validate($form, &$form_state) {
   if ($form_state['values']['cleantalk_authkey']){
     $cleantalk_auth_key = trim($form_state['values']['cleantalk_authkey']);
     $is_valid = \Drupal\cleantalk\CleantalkHelper::api_method__notice_validate_key($cleantalk_auth_key);
-    if ($is_valid['valid'] === 1)
+
+    if (isset($is_valid['valid']) && $is_valid['valid'] == 1)
     {
       \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
       if ($form_state['values']['cleantalk_sfw'] === 1)

@@ -374,7 +374,7 @@ class CleantalkFuncs
                 'key_press_timestamp' => (isset($_COOKIE['apbct_fkp_timestamp']) ? $_COOKIE['apbct_fkp_timestamp'] : ''),
                 'page_set_timestamp' => (isset($_COOKIE['apbct_ps_timestamp']) ? $_COOKIE['apbct_ps_timestamp'] : 0),	            
 	            'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
-	            'cookies_enabled' => self::_cleantalk_apbct_cookies_set(),
+	            'cookies_enabled' => self::_cleantalk_apbct_cookies_test(),
 	        )
 	    );
 	    $ct_request->post_info = drupal_json_encode(

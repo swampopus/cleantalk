@@ -73,32 +73,38 @@ function cleantalk_find_spam_users()
 {
     // Get all accounts
     $accounts = user_load_multiple(FALSE);	
-	$data = array();
-	$spam_users=array();	
-    foreach ($accounts as $account) 
-    {
-        // Skip adding the role to the user if they already have it.
-        if ($account !== FALSE && isset($account->mail)) 
-            array_push($data, $account->mail);
-    }
-    $data=implode(',',$data);
-    $result=\Drupal\cleantalk\CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);
+	$spam_users=array();
 
-    if(isset($result['error_message']))
-        drupal_set_message($result['error_message'],'error');
-    else
-    {
-		foreach($result as $key => $value)
-		{
-			if ($value['appears'] == '1' )
+	if ($accounts && count($accounts) > 0)
+	{
+		$data = array();
+
+	    foreach ($accounts as $account) 
+	    {
+	        // Skip adding the role to the user if they already have it.
+	        if ($account !== FALSE && isset($account->mail)) 
+	            array_push($data, $account->mail);
+	    }
+	    $data=implode(',',$data);
+	    $result=\Drupal\cleantalk\CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);
+
+	    if(isset($result['error_message']))
+	        drupal_set_message($result['error_message'],'error');
+	    else
+	    {
+			foreach($result as $key => $value)
 			{
-				foreach ($accounts as $account)
+				if ($value['appears'] == '1' )
 				{
-					if ($account->mail == $key)
-						$spam_users[] = $account;
-				}
-			}              
-		}        	
-    }
+					foreach ($accounts as $account)
+					{
+						if ($account->mail == $key)
+							$spam_users[] = $account;
+					}
+				}              
+			}        	
+	    }		
+	}
+
     return $spam_users;	
 }
