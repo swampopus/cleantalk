@@ -2,7 +2,7 @@
 use Drupal\cleantalk\CleantalkSFW;
 use Drupal\cleantalk\CleantalkFuncs;
 
-define("CLEANTALK_USER_AGENT", 'drupal-35');
+define("CLEANTALK_USER_AGENT", 'drupal-36');
 
 /**
  * @file
