@@ -1,6 +1,5 @@
 <?php
 use Drupal\cleantalk\CleantalkSFW;
-use Drupal\cleantalk\CleantalkCustomConfig;
 use Drupal\cleantalk\CleantalkFuncs;
 
 define("CLEANTALK_USER_AGENT", 'drupal-35');
