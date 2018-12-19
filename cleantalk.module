@@ -182,13 +182,6 @@ function cleantalk_menu()
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id) 
 {
-    if ($url_exclusion)
-    {
-        foreach ($url_exclusion as $key=>$value)
-            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
-                return;         
-    }   
-
     if (user_access('administer modules') && path_is_admin(current_path()) || $form_id == 'search_form' || $form_id =='user_login_form' || $form_id == 'search_block_form' || $form_id == 'user_login_block')
         return;
 
