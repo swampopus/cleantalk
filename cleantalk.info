@@ -2,4 +2,3 @@ name = Antispam by CleanTalk
 description = Antispam service from <a target="_blank" href="http://cleantalk.org">CleanTalk</a> to protect your site
 configure = admin/config/cleantalk
 core = 7.x
-dependencies[] = xautoload

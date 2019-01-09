@@ -1,5 +1,4 @@
 <?php
-namespace Drupal\cleantalk;
 
 class CleantalkCustomConfig
 {

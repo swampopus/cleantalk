@@ -1,5 +1,5 @@
 <?php
-namespace Drupal\cleantalk;
+require_once(dirname(__FILE__) . '/CleantalkHelper.php');
 
 /*
  * CleanTalk SpamFireWall base class

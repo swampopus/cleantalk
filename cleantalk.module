@@ -1,8 +1,8 @@
 <?php
-use Drupal\cleantalk\CleantalkSFW;
-use Drupal\cleantalk\CleantalkFuncs;
+require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
+require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
-define("CLEANTALK_USER_AGENT", 'drupal-36');
+define("CLEANTALK_USER_AGENT", 'drupal-37');
 
 /**
  * @file
@@ -144,7 +144,7 @@ function cleantalk_menu()
         'page callback' => 'drupal_get_form',
         'page arguments' => array('cleantalk_settings_form'),
         'access arguments' => array('administer site configuration'),
-        'file' => 'lib/Drupal/cleantalk/Form/CleantalkSettingsForm.php',
+        'file' => 'src/Form/CleantalkSettingsForm.php',
     );
 
     $items['admin/config/cleantalk/settings'] = array(
@@ -153,7 +153,7 @@ function cleantalk_menu()
         'page callback' => 'drupal_get_form',
         'page arguments' => array('cleantalk_settings_form'),
         'access arguments' => array('administer site configuration'),
-        'file' => 'lib/Drupal/cleantalk/Form/CleantalkSettingsForm.php',
+        'file' => 'src/Form/CleantalkSettingsForm.php',
     );    
 
     $items['admin/config/cleantalk/checkusers'] = array(
@@ -162,7 +162,7 @@ function cleantalk_menu()
         'page callback' => 'drupal_get_form',
         'page arguments' => array('cleantalk_check_users_form'),
         'access arguments' => array('administer site configuration'),
-        'file' => 'lib/Drupal/cleantalk/Form/CleantalkCheckUsersForm.php',
+        'file' => 'src/Form/CleantalkCheckUsersForm.php',
     );     
 
     $items['admin/config/cleantalk/checkcomments'] = array(
@@ -171,7 +171,7 @@ function cleantalk_menu()
         'page callback' => 'drupal_get_form',
         'page arguments' => array('cleantalk_check_comments_form'),
         'access arguments' => array('administer site configuration'),
-        'file' => 'lib/Drupal/cleantalk/Form/CleantalkCheckCommentsForm.php',
+        'file' => 'src/Form/CleantalkCheckCommentsForm.php',
     );
 
     return $items;
@@ -228,7 +228,7 @@ function cleantalk_init()
         )
     ); 
 
-    drupal_add_js(drupal_get_path('module', 'cleantalk') . '/lib/Drupal/cleantalk/js/apbct-public.js');
+    drupal_add_js(drupal_get_path('module', 'cleantalk') . '/src/js/apbct-public.js');
 
     $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
     if($ct_authkey != '')

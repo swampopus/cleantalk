@@ -1,5 +1,8 @@
 <?php
-namespace Drupal\cleantalk;
+require_once(dirname(__FILE__) . '/Cleantalk.php');
+require_once(dirname(__FILE__) . '/CleantalkRequest.php');
+require_once(dirname(__FILE__) . '/CleantalkHelper.php');
+require_once(dirname(__FILE__) . '/CleantalkCustomConfig.php');
 
 /**
  * Cleantalk class create request

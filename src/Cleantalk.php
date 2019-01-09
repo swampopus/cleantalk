@@ -1,5 +1,6 @@
 <?php
-namespace Drupal\cleantalk;
+require_once(dirname(__FILE__) . '/CleantalkRequest.php');
+require_once(dirname(__FILE__) . '/CleantalkResponse.php');
 
 /**
  * Cleantalk Base class
