@@ -131,7 +131,7 @@ function cleantalk_validate_forum(&$form, &$form_state)
         $spam_check = array();
         $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
-        $spam_check['type'] = 'forum';
+        $spam_check['type'] = 'comment';
         if (empty($form_state['values']['e_mail']))
             $spam_check['sender_email'] = ($ct_temp_msg_data['email']    ? $ct_temp_msg_data['email']    : '');
         else $spam_check['sender_email'] = $form_state['values']['e_mail'];
