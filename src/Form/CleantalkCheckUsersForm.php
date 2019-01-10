@@ -1,5 +1,6 @@
 <?php
-require_once(dirname(__FILE__) . '../CleantalkHelper.php');
+require_once(dirname(__FILE__) . '/../CleantalkHelper.php');
+
 /**
  * @file
  * CleanTalk module admin functions.
@@ -85,8 +86,8 @@ function cleantalk_find_spam_users()
 	        if ($account !== FALSE && isset($account->mail)) 
 	            array_push($data, $account->mail);
 	    }
-	    $data=implode(',',$data);
-	    $result=\Drupal\cleantalk\CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);
+	    $data = implode(',',$data);
+	    $result = CleantalkHelper::api_method__spam_check_cms(trim(variable_get('cleantalk_authkey', '')), $data);
 
 	    if(isset($result['error_message']))
 	        drupal_set_message($result['error_message'],'error');

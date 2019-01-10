@@ -1,5 +1,7 @@
 <?php
-require_once(dirname(__FILE__) . '../CleantalkHelper.php');
+require_once(dirname(__FILE__) . '/../CleantalkHelper.php');
+require_once(dirname(__FILE__) . '/../CleantalkSFW.php');
+
 /**
  * @file
  * CleanTalk module admin functions.
@@ -119,14 +121,14 @@ function cleantalk_settings_form($form, &$form_state) {
 function cleantalk_settings_form_validate($form, &$form_state) { 
   if ($form_state['values']['cleantalk_authkey']){
     $cleantalk_auth_key = trim($form_state['values']['cleantalk_authkey']);
-    $is_valid = \Drupal\cleantalk\CleantalkHelper::api_method__notice_validate_key($cleantalk_auth_key);
+    $is_valid = CleantalkHelper::api_method__notice_validate_key($cleantalk_auth_key);
 
     if (isset($is_valid['valid']) && $is_valid['valid'] == 1)
     {
-      \Drupal\cleantalk\CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
+      CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
       if ($form_state['values']['cleantalk_sfw'] === 1)
       {
-        $sfw = new \Drupal\cleantalk\CleantalkSFW();
+        $sfw = new CleantalkSFW();
         $sfw->sfw_update($cleantalk_auth_key);
         $sfw->send_logs($cleantalk_auth_key);
         variable_set('ct_sfw_last_logs_sent', time());
