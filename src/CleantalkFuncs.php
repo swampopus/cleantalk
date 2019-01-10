@@ -354,6 +354,7 @@ class CleantalkFuncs
 	        'cleantalk_check_register' => variable_get('cleantalk_check_register', ''),
 	        'cleantalk_check_webforms' => variable_get('cleantalk_check_webforms', ''),
 	        'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
+	        'cleantalk_check_forum_topics' => variable_get('cleantalk_check_forum_topics', ''),
 	        'cleantalk_check_ccf' => variable_get('cleantalk_check_ccf', ''),        
 	        'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
 	        'cleantalk_ssl' => variable_get('cleantalk_ssl', ''),
@@ -382,7 +383,7 @@ class CleantalkFuncs
 	    );
 	    $ct_request->post_info = drupal_json_encode(
 		    array(
-		      'comment_type' => $spam_check['type'] . '_feedback',
+		      'comment_type' => $spam_check['type'],
 		      'post_url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null,
 		    )
 	    );

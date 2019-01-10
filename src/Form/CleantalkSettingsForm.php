@@ -91,6 +91,13 @@ function cleantalk_settings_form($form, &$form_state) {
     '#description' => t('Enabling this option will allow you to check all contact forms on your website.'),
   );
 
+  $form['cleantalk_check_forum_topics'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check forum topics'),
+    '#default_value' => variable_get('cleantalk_check_forum_topics', 0),
+    '#description' => t('Enabling this option will allow you to check all forum topics on your website.'),
+  );  
+
   $form['cleantalk_check_ccf'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check custom form'),
