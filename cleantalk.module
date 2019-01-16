@@ -356,6 +356,6 @@ function cleantalk_uc_order($op, $order, $arg2)
             drupal_exit();
         } 
         else 
-            _cleantalk_die($spam_result['ct_result_comment']);     
+            CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);     
     }
 }
