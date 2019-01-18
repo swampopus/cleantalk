@@ -2,7 +2,7 @@
 require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
-define("CLEANTALK_USER_AGENT", 'drupal-380');
+define("CLEANTALK_USER_AGENT", 'drupal-390');
 
 /**
  * @file

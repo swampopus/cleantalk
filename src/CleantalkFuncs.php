@@ -328,13 +328,24 @@ class CleantalkFuncs
 	        if ($count >= $ct_comments) 
 	            return;
 	    }
+	    $url_checking = CleantalkCustomConfig::get_url_checking();
+	    if ($url_checking)
+	    {
+	    	if (!isset($url_checking['all']))
+	    	{
+		        foreach ($url_checking as $key=>$value)
+		            if (strpos($_SERVER['REQUEST_URI'],$value) === false)
+		                return; 
+	    	}
+        
+	    }
 
 	    $url_exclusion = CleantalkCustomConfig::get_url_exclusions();
 	    if ($url_exclusion)
 	    {
 	        foreach ($url_exclusion as $key=>$value)
 	            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
-	                return false;         
+	                return;         
 	    }    
 
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
