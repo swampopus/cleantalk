@@ -333,10 +333,9 @@ class CleantalkFuncs
 	    {
 	    	if (!isset($url_checking['all']))
 	    	{
-		        foreach ($url_checking as $key=>$value)
-		            if (strpos($_SERVER['REQUEST_URI'],$value) === false)
-		                return; 
+		        return; 
 	    	}
+	    	//TODO
         
 	    }
 
