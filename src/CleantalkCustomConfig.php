@@ -8,7 +8,7 @@ class CleantalkCustomConfig
 	//Excludes fields from filtering. List them separated by commas
 	public static $cleantalk_fields_exclusions = '';
 
-	//Enable spam_check only on specific URLs. List them seperated by commas. All by default
+	//Enable spam_check only on specific URLs. List them seperated by commas. 'all' by default
 	public static $cleantalk_url_checking = 'all';
 
 	public static function get_url_exclusions()
