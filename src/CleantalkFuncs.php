@@ -330,10 +330,9 @@ class CleantalkFuncs
 	    }
 
 	    $url_checking = CleantalkCustomConfig::get_url_checking();
-	    $url_check = isset($url_checking['all']) ? true : false;
-
 	    if ($url_checking)
 	    {
+	    	$url_check = in_array('all', $url_checking) ? true : false;
 	    	if (!$url_check)
 	    	{
 		        foreach ($url_checking as $key=>$value)
@@ -347,11 +346,10 @@ class CleantalkFuncs
 		        foreach ($url_exclusion as $key=>$value)
 		            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
 		                $url_check = false;         
-		    }	                     
+		    }	
+		    if (!$url_check)
+	    		return;                     
 	    }
-
-	    if (!$url_check)
-	    	return;
 
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
 	    $ct_ws = self::_cleantalk_get_ws();
