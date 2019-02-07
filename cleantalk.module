@@ -245,6 +245,9 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
 
 function cleantalk_init() 
 {
+    if (user_access('administer modules') && path_is_admin(current_path()))
+        return;
+    
     CleantalkFuncs::_cleantalk_apbct_cookies_set();
 
     $js_template = "var apbct_check_js_val = '%s';";
@@ -321,7 +324,7 @@ function cleantalk_init()
             $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname']    ? $ct_temp_msg_data['nickname']    : '');       
             $spam_check['message_title'] = ($ct_temp_msg_data['subject']    ? $ct_temp_msg_data['subject']    : '');
             $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
-            
+
             if ($spam_check['sender_email'] != '')
             {
                 $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
