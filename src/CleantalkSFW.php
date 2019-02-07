@@ -22,38 +22,12 @@ class CleantalkSFW extends CleantalkHelper
 	public $result = false;
 	
 	//Database variables
-	private $table_prefix;
-	private $db;
-	private $query;
-	private $db_result;
 	private $db_result_data = array();
 	
 	public function __construct()
 	{
-		$this->table_prefix = "";
 		//$this->db = \Drupal::database();
 	}
-	
-	public function unversal_query($query, $straight_query = false)
-	{
-		if($straight_query)
-			$this->db_result = db_query($query);
-		else
-			$this->query = $query;
-	}
-	
-	public function unversal_fetch()
-	{
-		$this->db_result_data = $this->db_result->fetchAssoc();
-	}
-	
-	public function unversal_fetch_all()
-	{
-		while ($row = $this->db_result->fetchAssoc()){
-			$this->db_result_data[] = $row;
-		}
-	}
-	
 	
 	/*
 	*	Getting arrays of IP (REMOTE_ADDR, X-Forwarded-For, X-Real-Ip, Cf_Connecting_Ip)
@@ -80,15 +54,10 @@ class CleantalkSFW extends CleantalkHelper
 	public function check_ip(){
 		
 		foreach($this->ip_array as $current_ip){
-		
-			$query = "SELECT 
-				COUNT(network) AS cnt
-				FROM {".$this->table_prefix."cleantalk_sfw}
-				WHERE network = ".sprintf("%u", ip2long($current_ip))." & mask";
-			$this->unversal_query($query,true);
-			$this->unversal_fetch();
+
+			$this->db_result_data = db_query('SELECT COUNT(network) FROM {cleantalk_sfw} WHERE network = :network & mask', array(':network' => sprintf("%u", ip2long($current_ip))))->fetchField();
 			
-			if($this->db_result_data['cnt']){
+			if($this->db_result_data){
 				$this->result = true;
 				$this->blocked_ip = $current_ip;
 			}else{
@@ -106,22 +75,7 @@ class CleantalkSFW extends CleantalkHelper
 			return;
 		}
 		
-		$blocked = ($result == 'blocked' ? ' + 1' : '');
-		$time = time();
-
-		$query = "INSERT INTO {".$this->table_prefix."cleantalk_sfw_logs}
-		SET 
-			ip = '$ip',
-			all_entries = 1,
-			blocked_entries = 1,
-			entries_timestamp = '".intval($time)."'
-		ON DUPLICATE KEY 
-		UPDATE 
-			all_entries = all_entries + 1,
-			blocked_entries = blocked_entries".strval($blocked).",
-			entries_timestamp = '".intval($time)."'";
-
-		$this->unversal_query($query,true);
+		db_merge('cleantalk_sfw_logs')->key(['ip' => $ip])->fields(['ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()])->expression('all_entries', 'all_entries + :inc', [':inc' => 1])->expression('blocked_entries', 'blocked_entries + :inc', [':inc' => 1])->expression('entries_timestamp', time())->execute();
 	}
 	
 	/*
@@ -134,24 +88,34 @@ class CleantalkSFW extends CleantalkHelper
 		$result = self::api_method__get_2s_blacklists_db($ct_key);
 		
 		if(empty($result['error'])){
-			
-			$this->unversal_query("TRUNCATE TABLE {".$this->table_prefix."cleantalk_sfw}",true);
+
+			db_truncate('cleantalk_sfw')->execute();
 						
 			// Cast result to int
 			foreach($result as $value){
+
 				$value[0] = intval($value[0]);
 				$value[1] = intval($value[1]);
-			} unset($value);
-			
-			$query="INSERT INTO {".$this->table_prefix."cleantalk_sfw} VALUES ";
+
+			} 
+
+			unset($value);
+			$values = array();
+
 			for($i=0, $arr_count = count($result); $i < $arr_count; $i++){
-				if($i == count($result)-1){
-					$query.="(".$result[$i][0].",".$result[$i][1].");";
-				}else{
-					$query.="(".$result[$i][0].",".$result[$i][1]."), ";
-				}
+
+				$values[] = array('network' => $result[$i][0], 'mask' => $result[$i][1]);
+
 			}
-			$this->unversal_query($query,true);
+
+			if (count($values) > 0)
+			{
+				$query = db_insert('cleantalk_sfw')->fields(['network', 'mask']);
+				foreach ($values as $record)
+					$query->values($record);
+				$query->execute();
+
+			}
 			
 			return true;
 			
@@ -168,16 +132,14 @@ class CleantalkSFW extends CleantalkHelper
 	public function send_logs($ct_key){
 		
 		//Getting logs
-		$query = "SELECT * FROM {".$this->table_prefix."cleantalk_sfw_logs}";
-		$this->unversal_query($query,true);
-		$this->unversal_fetch_all();
-		
+		$this->db_result_data = db_query('SELECT * FROM {cleantalk_sfw_logs}')->fetchAll();
+
 		if(count($this->db_result_data)){
 			
 			//Compile logs
 			$data = array();
 			foreach($this->db_result_data as $key => $value){
-				$data[] = array(trim($value['ip']), $value['all_entries'], $value['all_entries']-$value['blocked_entries'], $value['entries_timestamp']);
+				$data[] = array(trim($value->ip), $value->all_entries, $value->all_entries-$value->blocked_entries, $value->entries_timestamp);
 			}
 			unset($key, $value);
 			
@@ -187,7 +149,7 @@ class CleantalkSFW extends CleantalkHelper
 			//Checking answer and deleting all lines from the table
 			if(empty($result['error'])){
 				if($result['rows'] == count($data)){
-					$this->unversal_query("TRUNCATE TABLE {".$this->table_prefix."cleantalk_sfw_logs}",true);
+					db_truncate('cleantalk_sfw_logs')->execute();
 					return true;
 				}
 			}else{
@@ -210,7 +172,8 @@ class CleantalkSFW extends CleantalkHelper
 		if(file_exists(dirname(__FILE__)."/sfw_die_page.html")){
 			$sfw_die_page = file_get_contents(dirname(__FILE__)."/sfw_die_page.html");
 		}else{
-			die("IP BLACKLISTED");
+			print "IP BLACKLISTED";
+			drupal_exit();
 		}
 		
 		// Service info
@@ -229,8 +192,9 @@ class CleantalkSFW extends CleantalkHelper
 		}else{
 			$sfw_die_page = str_replace('{GENERATED}', "<h2 class='second'>The page was generated at&nbsp;".date("D, d M Y H:i:s")."</h2>",$sfw_die_page);
 		}
-		
-		die($sfw_die_page);
+
+		print $sfw_die_page;
+		drupal_exit();
 		
 	}
 }
