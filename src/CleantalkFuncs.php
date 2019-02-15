@@ -180,6 +180,8 @@ class CleantalkFuncs
 	        
 	        if($value === '')
 	          continue;
+	      	if (strpos($key, 'ajax_') !== false || $key == 'js')
+	        	continue;
 	        
 	        // Skipping fields names with strings from (array)skip_fields_with_strings
 	        foreach($skip_fields_with_strings as $needle){
@@ -187,7 +189,7 @@ class CleantalkFuncs
 	            continue(2);
 	          }
 	        }unset($needle);
-	        
+
 	        // Obfuscating params
 	        foreach($obfuscate_params as $needle){
 	          if (strpos($key, $needle) !== false){
@@ -195,7 +197,8 @@ class CleantalkFuncs
 	            continue(2);
 	          }
 	        }unset($needle);
-	        
+
+	        	
 
 	        // Decodes URL-encoded data to string.
 	        $value = urldecode($value); 
