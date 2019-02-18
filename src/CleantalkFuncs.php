@@ -180,7 +180,7 @@ class CleantalkFuncs
 	        
 	        if($value === '')
 	          continue;
-	      	if (strpos($key, 'ajax_') !== false || $key == 'js')
+	      	if (strpos($key, 'ajax_') !== false)
 	        	continue;
 	        
 	        // Skipping fields names with strings from (array)skip_fields_with_strings
