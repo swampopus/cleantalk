@@ -3,6 +3,7 @@ require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
 define("CLEANTALK_USER_AGENT", 'drupal-390');
+define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 /**
  * @file
@@ -247,7 +248,11 @@ function cleantalk_init()
 {
     if (user_access('administer modules') && path_is_admin(current_path()))
         return;
-    
+
+    // Remote calls
+    if(isset($_GET['spbc_remote_call_token'], $_GET['spbc_remote_call_action'], $_GET['plugin_name']) && in_array($_GET['plugin_name'], array('antispam','anti-spam', 'apbct'))){
+        CleantalkFuncs::_cleantalk_apbct_remote_call__perform();
+    }    
     CleantalkFuncs::_cleantalk_apbct_cookies_set();
 
     $js_template = "var apbct_check_js_val = '%s';";

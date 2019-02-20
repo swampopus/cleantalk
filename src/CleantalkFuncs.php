@@ -3,6 +3,7 @@ require_once(dirname(__FILE__) . '/Cleantalk.php');
 require_once(dirname(__FILE__) . '/CleantalkRequest.php');
 require_once(dirname(__FILE__) . '/CleantalkHelper.php');
 require_once(dirname(__FILE__) . '/CleantalkCustomConfig.php');
+require_once(dirname(__FILE__) . '/CleantalkSFW.php');
 
 /**
  * Cleantalk class create request
@@ -604,6 +605,50 @@ class CleantalkFuncs
 					return true;
 		}
 		return false;
+
+	}
+
+	/**
+	 * Cleantalk inner function - perform remote call
+	 */
+	static public function _cleantalk_apbct_remote_call__perform() {
+
+		$remote_calls_config = variable_get('cleantalk_remote_calls', array());
+		$remote_action = $_GET['spbc_remote_call_action'];
+		$auth_key = trim(variable_get('cleantalk_authkey', ''));
+
+		if(array_key_exists($remote_action, $remote_calls_config)) {
+					
+			if(time() - $remote_calls_config[$remote_action]['last_call'] > APBCT_REMOTE_CALL_SLEEP){
+				$remote_calls[$remote_action]['last_call'] = time();
+				variable_set('remote_calls', $remote_calls);
+
+				if(strtolower($_GET['spbc_remote_call_token']) == strtolower(md5($auth_key))){
+
+					// Close renew banner
+					if($_GET['spbc_remote_call_action'] == 'close_renew_banner'){
+						die('OK');
+					// SFW update
+					}elseif($_GET['spbc_remote_call_action'] == 'sfw_update'){
+						$sfw = new CleantalkSFW();					
+						$result = $sfw->sfw_update($auth_key);
+						die(empty($result['error']) ? 'OK' : 'FAIL '.json_encode(array('error' => $result['error_string'])));
+					// SFW send logs
+					}elseif($_GET['spbc_remote_call_action'] == 'sfw_send_logs'){
+						$sfw = new CleantalkSFW();					
+						$result = $sfw->sfw_send_logs($auth_key);
+						die(empty($result['error']) ? 'OK' : 'FAIL '.json_encode(array('error' => $result['error_string'])));
+					// Update plugin
+					}elseif($_GET['spbc_remote_call_action'] == 'update_plugin'){
+						//add_action('wp', 'apbct_update', 1);
+					}else
+						die('FAIL '.json_encode(array('error' => 'UNKNOWN_ACTION_2')));
+				}else
+					die('FAIL '.json_encode(array('error' => 'WRONG_TOKEN')));
+			}else
+				die('FAIL '.json_encode(array('error' => 'TOO_MANY_ATTEMPTS')));
+		}else
+			die('FAIL '.json_encode(array('error' => 'UNKNOWN_ACTION')));
 
 	}	
 }
