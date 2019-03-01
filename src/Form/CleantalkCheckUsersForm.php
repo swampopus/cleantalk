@@ -12,32 +12,56 @@ require_once(dirname(__FILE__) . '/../CleantalkHelper.php');
 function cleantalk_check_users_form($form, &$form_state) { 
 	if (variable_get('cleantalk_authkey', '') != '')
 	{
-		$spam_users = cleantalk_find_spam_users();
-
 		$rows = array();
+
 		$header = array(
 			'spam_user_name' => t('Name'),
 			'spam_user_email' => t('E-mail'),
 			'spam_user_created' => t('Created'),
 			'spam_user_status' => t('Status'),
 		);	
-		foreach ($spam_users as $spam_user) {
-			$rows[] = array(
-		    	'spam_user_name' => l($spam_user->name, 'user/'.$spam_user->uid),
-		    	'spam_user_email' => $spam_user->mail,
-		    	'spam_user_created' => date("Y-m-d H:i:s", $spam_user->created),
-		    	'spam_user_status' => ($spam_user->status == 1) ? 'Active':'Inactive',
-		    	'#attributes' => array('user_id' => $spam_user->uid, 'class' => array('cleantalk-spam-users-row')),
-			);
+
+		if (!isset($form_state['offset'])) {
+			$form_state['offset'] = 0;
 		}
-		$form['cleantalk_spam_users_table_actions'] = array(
+
+		if (isset($form_state['spam_users']))
+		{
+			foreach ($form_state['spam_users'] as $spam_user) {
+				$rows[] = array(
+			    	'spam_user_name' => l($spam_user->name, 'user/'.$spam_user->uid),
+			    	'spam_user_email' => $spam_user->mail,
+			    	'spam_user_created' => date("Y-m-d H:i:s", $spam_user->created),
+			    	'spam_user_status' => ($spam_user->status == 1) ? 'Active':'Inactive',
+			    	'#attributes' => array('user_id' => $spam_user->uid, 'class' => array('cleantalk-spam-users-row')),
+				);
+			}				
+		}
+
+		$form['cleantalk_spam_users']['cleantalk_spam_users_wrapper'] = array(
+			'#type' => 'container',
+			'#tree' => TRUE,
+			'#prefix' => '<div id="cleantalk_spam_users_wrapper">',
+			'#suffix' => '</div>',
+		);
+        $form['cleantalk_spam_users']['cleantalk_spam_users_wrapper']['find_spam_users'] = array(
+            '#type' => 'submit',
+            '#value' => t('Find spam users'),
+            '#submit' => array('find_spam_users_btn'),
+            '#ajax' => array(
+                 'callback' => 'bulk_find_spam_users_callback',
+                 'wrapper' => 'cleantalk_spam_users_wrapper',
+            ),
+        );
+		$form['cleantalk_spam_users']['cleantalk_spam_users_wrapper']['cleantalk_spam_users_table_actions'] = array(
 			'#type' => 'select',
 			'#title' => t('Actions'),
 			'#options' => array(
 				1 => t('Delete'),
 			),
-		);			
-		$form['cleantalk_spam_users_table'] = array(
+		);	
+
+		$form['cleantalk_spam_users']['cleantalk_spam_users_wrapper']['cleantalk_spam_users_table'] = array(
 		  '#type' => 'tableselect',
 		  '#header' => $header,
 		  '#options' => $rows,
@@ -45,23 +69,52 @@ function cleantalk_check_users_form($form, &$form_state) {
 		  '#attributes' => array('class' => array('cleantalk_spam_users_table')),
 		);
 
-		$form['submit'] = array(
+
+
+		$form['cleantalk_spam_users']['cleantalk_spam_users_wrapper']['submit'] = array(
 			'#type' => 'submit',
 			'#value' => t('Submit'),				
-		);			
+		);	
+
 		return $form;	
 
 	}
 	else drupal_set_message('Access key is not valid.','error');
 }
+
+function find_spam_users_btn($form, &$form_state) {
+	$check_finished = false;
+
+	while (!$check_finished)
+	{
+		$accounts = db_select('users', 'u')->fields('u')->range($form_state['offset'], 20)->execute()->fetchAll();
+		if (count($accounts) > 0)
+		{
+			$spam_users = cleantalk_find_spam_users($accounts);
+			if (count($spam_users) > 0) {
+				$form_state['spam_users'] = $spam_users;
+				if (isset($form_state['spam_users']))
+					array_unshift($spam_users, $form_state['spam_users'][0]);
+			}
+
+			$form_state['offset'] += 20;			
+		}
+		else $check_finished = true;
+	}
+
+	// rebuild whole form with new values
+	$form_state['rebuild'] = true;	  
+}
+
 function cleantalk_check_users_form_submit($form, &$form_state)
 {
-	$action = $form_state['values']['cleantalk_spam_users_table_actions'];
+	$action = $form_state['values']['cleantalk_spam_users_wrapper']['cleantalk_spam_users_table_actions'];
+
 	$values = array();
-	foreach ($form_state['values']['cleantalk_spam_users_table'] as $key => $value)
+	foreach ($form_state['values']['cleantalk_spam_users_wrapper']['cleantalk_spam_users_table'] as $key => $value)
 	{
 		if (is_string($value))
-			$values[] = $form_state['complete form']['cleantalk_spam_users_table']['#options'][$value];
+			$values[] = $form_state['complete form']['cleantalk_spam_users']['cleantalk_spam_users_wrapper']['cleantalk_spam_users_table']['#options'][$value];
 	}
 	//Delete user
 	if ($action == 1)
@@ -70,10 +123,16 @@ function cleantalk_check_users_form_submit($form, &$form_state)
 			user_cancel(array(), $user['#attributes']['user_id'], 'user_cancel_delete');
 	}
 }
-function cleantalk_find_spam_users()
+
+function bulk_find_spam_users_callback($form, &$form_state)
+{
+	return $form['cleantalk_spam_users']['cleantalk_spam_users_wrapper'];
+}
+
+function cleantalk_find_spam_users($accounts)
 {
     // Get all accounts
-    $accounts = user_load_multiple(FALSE);	
+	
 	$spam_users=array();
 
 	if ($accounts && count($accounts) > 0)

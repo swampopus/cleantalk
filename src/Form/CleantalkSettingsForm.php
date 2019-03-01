@@ -12,18 +12,22 @@ require_once(dirname(__FILE__) . '/../CleantalkSFW.php');
  */
 function cleantalk_settings_form($form, &$form_state) { 
 
+  //Renew banner
+  
+  if (variable_get('show_renew_banner', 0)) {
+
+    $link = (variable_get('api_trial', 0)) ? 'https://cleantalk.org/my/bill/recharge?utm_source=banner&utm_medium=wp-backend&utm_campaign=Drupal%20backend%20trial&user_token=' : 'https://cleantalk.org/my/bill/recharge?utm_source=banner&utm_medium=wp-backend&utm_campaign=Drupal%20backend%20renew&user_token=';
+
+    drupal_set_message(t("Cleantalk module trial period ends, please upgrade to <a href='" . $link . variable_get('api_user_token', '') . "' target='_blank'><b>premium version</b></a> ."), 'warning', false);
+  }
+
   $form['cleantalk_authkey'] = array(
     '#type' => 'textfield',
     '#title' => t('Access key'),
     '#size' => 20,
     '#maxlength' => 20,
     '#default_value' => variable_get('cleantalk_authkey', ''),
-    '#description' => t(
-      'Click <a target="_blank" href="!ct_link">here</a> to get access key.',
-      array(
-        '!ct_link' => url('http://cleantalk.org/register?platform=drupal'),
-      )
-    ),
+    '#description' => (variable_get('cleantalk_authkey','')) ? t('Account at cleantalk.org is <b>' . variable_get('api_account_name_ob', '').'</b>') : t('Click <a target="_blank" href="!ct_link">here</a> to get access key.', array('!ct_link' => url('http://cleantalk.org/register?platform=drupal'), )) ,
   );
 
   $form['cleantalk_comments'] = array(
@@ -133,6 +137,23 @@ function cleantalk_settings_form_validate($form, &$form_state) {
     if (isset($is_valid['valid']) && $is_valid['valid'] == 1)
     {
       CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
+      $account_status = CleantalkHelper::api_method__notice_paid_till($cleantalk_auth_key);
+      if (empty($account_status['error']))
+      {
+        variable_set('api_show_notice', isset($account_status['show_notice']) ? $account_status['show_notice'] : 0);
+        variable_set('api_renew', isset($account_status['renew']) ? $account_status['renew'] : 0);
+        variable_set('api_trial', isset($account_status['trial']) ? $account_status['trial'] : 0);
+        variable_set('api_user_token', isset($account_status['user_token']) ? $account_status['user_token'] : '');
+        variable_set('api_spam_count', isset($account_status['spam_count']) ? $account_status['spam_count'] : 0);
+        variable_set('api_moderate_ip', isset($account_status['moderate_ip']) ? $account_status['moderate_ip'] : 0);
+        variable_set('api_moderate', isset($account_status['moderate']) ? $account_status['moderate'] : 0);
+        variable_set('api_show_review', isset($account_status['show_review']) ? $account_status['show_review'] : 0);
+        variable_set('api_service_id', isset($account_status['service_id']) ? $account_status['service_id'] : 0);
+        variable_set('api_license_trial', isset($account_status['license_trial']) ? $account_status['license_trial'] : 0);
+        variable_set('api_account_name_ob', isset($account_status['account_name_ob']) ? $account_status['account_name_ob'] : '');
+        variable_set('api_ip_license', isset($account_status['ip_license']) ? $account_status['ip_license'] : 0);
+        variable_set('show_renew_banner', (variable_get('api_show_notice', 0) && variable_get('api_trial',0)) ? 1 : 0);
+      }
       if ($form_state['values']['cleantalk_sfw'] === 1)
       {
         $sfw = new CleantalkSFW();
