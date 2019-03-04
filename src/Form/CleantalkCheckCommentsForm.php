@@ -27,7 +27,7 @@ function cleantalk_check_comments_form($form, &$form_state) {
 			}			
 
 			if (isset($form_state['spam_comments'])) {
-				foreach ($spam_comments as $spam_comment)
+				foreach ($form_state['spam_comments'] as $spam_comment)
 				{
 					$rows[] = array(
 				    	'spam_comment_name' => $spam_comment->name,
