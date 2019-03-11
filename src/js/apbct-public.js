@@ -8,7 +8,6 @@ function ctSetCookie(c_name, value) {
 	document.cookie = c_name + "=" + encodeURIComponent(value) + "; path=/";
 }
 
-ctSetCookie("apbct_check_js", apbct_check_js_val);
 ctSetCookie("apbct_ps_timestamp", Math.floor(new Date().getTime()/1000));
 ctSetCookie("apbct_fkp_timestamp", "0");
 ctSetCookie("apbct_pointer_data", "0");
