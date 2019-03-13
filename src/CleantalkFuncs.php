@@ -627,7 +627,7 @@ class CleantalkFuncs
 
 					// Close renew banner
 					if($_GET['spbc_remote_call_action'] == 'close_renew_banner'){
-						variable_set('show_renew_banner', 0);
+						variable_set('cleantalk_show_renew_banner', 0);
 						die('OK');
 					// SFW update
 					}elseif($_GET['spbc_remote_call_action'] == 'sfw_update'){

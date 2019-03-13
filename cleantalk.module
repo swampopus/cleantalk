@@ -274,17 +274,17 @@ function cleantalk_init()
         {
             $sfw = new CleantalkSFW();
 
-            $ct_sfw_last_logs_sent = variable_get( 'ct_sfw_last_logs_sent', null);
+            $ct_sfw_last_logs_sent = variable_get( 'cleantalk_sfw_last_logs_sent', null);
             if($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600))
             {
-                variable_set('ct_sfw_last_logs_sent', time());
+                variable_set('cleantalk_sfw_last_logs_sent', time());
                 $sfw->send_logs($ct_authkey);
             }
 
-            $ct_sfw_last_updated = variable_get( 'ct_sfw_last_updated', null);
+            $ct_sfw_last_updated = variable_get( 'cleantalk_sfw_last_updated', null);
             if($ct_sfw_last_updated && (time()-$ct_sfw_last_updated > 86400))
             {
-                variable_set('ct_sfw_last_updated', time());
+                variable_set('cleantalk_sfw_last_updated', time());
                 $sfw->sfw_update($ct_authkey);
             }
 

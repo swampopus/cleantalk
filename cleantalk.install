@@ -108,21 +108,21 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_server_url');
   variable_del('cleantalk_server_ttl');
   variable_del('cleantalk_server_changed');
-  variable_del('ct_sfw_last_logs_sent');
-  variable_del('ct_sfw_last_updated');
-  variable_del('api_show_notice');
-  variable_del('api_renew');
-  variable_del('api_trial');
-  variable_del('api_user_token');
-  variable_del('api_spam_count');
-  variable_del('api_moderate_ip');
-  variable_del('api_moderate');
-  variable_del('api_show_review');
-  variable_del('api_service_id');
-  variable_del('api_license_trial');
-  variable_del('api_account_name_ob');
-  variable_del('api_ip_license');
-  variable_del('show_renew_banner');
+  variable_del('cleantalk_sfw_last_logs_sent');
+  variable_del('cleantalk_sfw_last_updated');
+  variable_del('cleantalk_api_show_notice');
+  variable_del('cleantalk_api_renew');
+  variable_del('cleantalk_api_trial');
+  variable_del('cleantalk_api_user_token');
+  variable_del('cleantalk_api_spam_count');
+  variable_del('cleantalk_api_moderate_ip');
+  variable_del('cleantalk_api_moderate');
+  variable_del('cleantalk_api_show_review');
+  variable_del('cleantalk_api_service_id');
+  variable_del('cleantalk_api_license_trial');
+  variable_del('cleantalk_api_account_name_ob');
+  variable_del('cleantalk_api_ip_license');
+  variable_del('cleantalk_show_renew_banner');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
   db_drop_table('cleantalk_sfw_logs');  
@@ -132,7 +132,7 @@ function cleantalk_uninstall() {
  * Add new table for SpamFireWall logs
  */
 function cleantalk_update_7300(&$sandbox = NULL){
-  variable_set('ct_sfw_last_logs_sent', time());
+  variable_set('cleantalk_sfw_last_logs_sent', time());
   db_drop_table('cleantalk_sfw_logs');
   $cleantalk_sfw_logs = array(
     'description' => 'Comment checking results - CIDs and server responces.',
@@ -168,7 +168,7 @@ function cleantalk_update_7300(&$sandbox = NULL){
  * Compatibilty changes for SpamFireWall logs table
  */
 function cleantalk_update_7301(&$sandbox = NULL){
-  variable_set('ct_sfw_last_logs_sent', time());
+  variable_set('cleantalk_sfw_last_logs_sent', time());
   db_drop_table('cleantalk_sfw_logs');
   $cleantalk_sfw_logs = array(
     'description' => 'Comment checking results - CIDs and server responces.',
