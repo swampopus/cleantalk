@@ -32,7 +32,7 @@ function cleantalk_validate_register(&$form, &$form_state)
         $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
         $spam_check['timezone'] = !empty($form_state['values']['timezone']) ? $form_state['values']['timezone'] : '';
 
-        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
             form_set_error('mail', $spam_result['ct_result_comment']);        
@@ -60,7 +60,7 @@ function cleantalk_validate_comment(&$form, &$form_state)
         $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
         $spam_check['message_body'] = (is_array($comment_body) && isset($comment_body['value'])) ? $comment_body['value'] : ''; 
 
-        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
         {
@@ -85,7 +85,7 @@ function cleantalk_validate_contact_message(&$form, &$form_state)
         $spam_check['message_title'] = !empty($form_state['values']['subject']) ? $form_state['values']['subject'] : '';
         $spam_check['message_body'] = !empty($form_state['values']['message']) ? $form_state['values']['message'] : '';
 
-        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
             form_set_error('comment_body', $spam_result['ct_result_comment']);        
@@ -116,7 +116,8 @@ function cleantalk_validate_webform(&$form, &$form_state)
             $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
         else $spam_check['message_body'] = $form_state['values']['submitted']['message'];             
 
-        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
+
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
             form_set_error('comment_body', $spam_result['ct_result_comment']);                                     
     }
@@ -146,7 +147,8 @@ function cleantalk_validate_forum(&$form, &$form_state)
             $spam_check['message_body'] = ($ct_temp_msg_data['message']    ? $ct_temp_msg_data['message']    : '');
         else $spam_check['message_body'] = $form_state['values']['body']['und'][0]['value'];             
 
-        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+        $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
+        
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
             form_set_error('comment_body', $spam_result['ct_result_comment']);                                     
     }
