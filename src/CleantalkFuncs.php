@@ -397,7 +397,7 @@ class CleantalkFuncs
                 'page_set_timestamp' => (isset($_COOKIE['apbct_ps_timestamp']) ? $_COOKIE['apbct_ps_timestamp'] : 0),	            
 	            'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
 	            'cookies_enabled' => self::_cleantalk_apbct_cookies_test(),
-	            'form_validation' => ($form_errors && is_array($form_errors)) ? array('validation_notice' => json_encode($form_errors), 'page_url' => $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']) : null,	            
+	            'form_validation' => ($form_errors && is_array($form_errors)) ? json_encode(array('validation_notice' => json_encode($form_errors), 'page_url' => $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'])) : null,	            
 	        )
 	    );
 	    $ct_request->post_info = drupal_json_encode(
