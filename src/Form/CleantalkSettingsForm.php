@@ -27,7 +27,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#size' => 20,
     '#maxlength' => 20,
     '#default_value' => variable_get('cleantalk_authkey', ''),
-    '#description' => (variable_get('cleantalk_authkey','')) ? t('Account at cleantalk.org is <b>' . variable_get('api_account_name_ob', '').'</b>') : t('Click <a target="_blank" href="!ct_link">here</a> to get access key.', array('!ct_link' => url('http://cleantalk.org/register?platform=drupal'), )) ,
+    '#description' => (variable_get('cleantalk_authkey','')) ? t('Account at cleantalk.org is <b>' . variable_get('cleantalk_api_account_name_ob', '').'</b>') : t('Click <a target="_blank" href="!ct_link">here</a> to get access key.', array('!ct_link' => url('http://cleantalk.org/register?platform=drupal'), )) ,
   );
 
   $form['cleantalk_comments'] = array(
