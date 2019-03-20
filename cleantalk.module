@@ -262,7 +262,7 @@ function cleantalk_init()
     drupal_add_js('ctSetCookie("apbct_check_js", "'.CleantalkFuncs::_cleantalk_get_checkjs_value().'", "0");',
         array(
           'type' => 'inline',
-          'scope' => 'header',
+          'scope' => 'footer',
           'weight' => 5,
           'cache' => FALSE,
           'every_page' => TRUE,
