@@ -11,37 +11,45 @@ require_once(dirname(__FILE__) . '/CleantalkHelper.php');
  * see https://github.com/CleanTalk/php-antispam
 */
 
-class CleantalkSFW extends CleantalkHelper
-{
+class CleantalkSFW extends CleantalkHelper {
+
 	public $ip = 0;
 	public $ip_str = '';
 	public $ip_array = Array();
 	public $ip_str_array = Array();
 	public $blocked_ip = '';
+	public $blocked_network = '';
 	public $passed_ip = '';
 	public $result = false;
 	
 	//Database variables
+
 	private $db_result_data = array();
 	
-	public function __construct()
-	{
+	public function __construct() {
+
 		//$this->db = \Drupal::database();
+
 	}
 	
 	/*
 	*	Getting arrays of IP (REMOTE_ADDR, X-Forwarded-For, X-Real-Ip, Cf_Connecting_Ip)
 	*	reutrns array('remote_addr' => 'val', ['x_forwarded_for' => 'val', ['x_real_ip' => 'val', ['cloud_flare' => 'val']]])
 	*/
-	static public function ip_get($ips_input = array('real', 'remote_addr', 'x_forwarded_for', 'x_real_ip', 'cloud_flare'), $v4_only = true){
+
+	static public function ip_get($ips_input = array('real', 'remote_addr', 'x_forwarded_for', 'x_real_ip', 'cloud_flare'), $v4_only = true) {
 		
 		$result = (array)parent::ip_get($ips_input, $v4_only);
 		
 		$result = !empty($result) ? $result : array();
 		
-		if(isset($_GET['sfw_test_ip'])){
-			if(self::ip_validate($_GET['sfw_test_ip']) !== false)
+		if (isset($_GET['sfw_test_ip'])) {
+
+			if (self::ip_validate($_GET['sfw_test_ip']) !== false) {
+
 				$result['sfw_test'] = $_GET['sfw_test_ip'];
+
+			}
 		}
 		
 		return $result;
@@ -51,17 +59,25 @@ class CleantalkSFW extends CleantalkHelper
 	/*
 	*	Checks IP via Database
 	*/
-	public function check_ip(){
+
+	public function check_ip() {
 		
 		foreach($this->ip_array as $current_ip){
 
-			$this->db_result_data = db_query('SELECT COUNT(network) FROM {cleantalk_sfw} WHERE network = :network & mask', array(':network' => sprintf("%u", ip2long($current_ip))))->fetchField();
+			$this->db_result_data = db_query('SELECT network FROM {cleantalk_sfw} WHERE network = :network & mask', array(':network' => sprintf("%u", ip2long($current_ip))))->fetchField();
 			
-			if($this->db_result_data){
+			if (!empty($this->db_result_data)) {
+
 				$this->result = true;
 				$this->blocked_ip = $current_ip;
-			}else{
+				$this->blocked_network = $this->db_result_data;
+
+			}
+
+			else {
+
 				$this->passed_ip = $current_ip;
+
 			}
 		}
 	}
@@ -69,10 +85,13 @@ class CleantalkSFW extends CleantalkHelper
 	/*
 	*	Add entry to SFW log
 	*/
+
 	public function sfw_update_logs($ip, $result){
 		
-		if($ip === NULL || $result === NULL){
+		if($ip === NULL || $result === NULL) {
+
 			return;
+
 		}
 		
 		db_merge('cleantalk_sfw_logs')->key(['ip' => $ip])->fields(['ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()])->expression('all_entries', 'all_entries + :inc', [':inc' => 1])->expression('blocked_entries', 'blocked_entries + :inc', [':inc' => 1])->expression('entries_timestamp', time())->execute();
@@ -83,16 +102,18 @@ class CleantalkSFW extends CleantalkHelper
 	* 
 	* return mixed true || array('error' => true, 'error_string' => STRING)
 	*/
+
 	public function sfw_update($ct_key){
 		
 		$result = self::api_method__get_2s_blacklists_db($ct_key);
 		
-		if(empty($result['error'])){
+		if (empty($result['error'])) {
 
 			db_truncate('cleantalk_sfw')->execute();
 						
 			// Cast result to int
-			foreach($result as $value){
+
+			foreach ($result as $value) {
 
 				$value[0] = intval($value[0]);
 				$value[1] = intval($value[1]);
@@ -102,25 +123,33 @@ class CleantalkSFW extends CleantalkHelper
 			unset($value);
 			$values = array();
 
-			for($i=0, $arr_count = count($result); $i < $arr_count; $i++){
+			for ($i=0, $arr_count = count($result); $i < $arr_count; $i++) {
 
 				$values[] = array('network' => $result[$i][0], 'mask' => $result[$i][1]);
 
 			}
 
-			if (count($values) > 0)
-			{
+			if (count($values) > 0) {
+
 				$query = db_insert('cleantalk_sfw')->fields(['network', 'mask']);
-				foreach ($values as $record)
+
+				foreach ($values as $record) {
+
 					$query->values($record);
+
+				}
 				$query->execute();
 
 			}
 			
 			return true;
 			
-		}else{
+		}
+
+		else {
+
 			return $result;
+
 		}
 	}
 	
@@ -129,35 +158,55 @@ class CleantalkSFW extends CleantalkHelper
 	* 
 	* returns mixed true || array('error' => true, 'error_string' => STRING)
 	*/
-	public function send_logs($ct_key){
+
+	public function send_logs($ct_key) {
 		
 		//Getting logs
+
 		$this->db_result_data = db_query('SELECT * FROM {cleantalk_sfw_logs}')->fetchAll();
 
-		if(count($this->db_result_data)){
+		if (count($this->db_result_data)) {
 			
 			//Compile logs
+
 			$data = array();
-			foreach($this->db_result_data as $key => $value){
+
+			foreach($this->db_result_data as $key => $value) {
+
 				$data[] = array(trim($value->ip), $value->all_entries, $value->all_entries-$value->blocked_entries, $value->entries_timestamp);
+
 			}
+
 			unset($key, $value);
 			
 			//Sending the request
+
 			$result = self::api_method__sfw_logs($ct_key, $data);
 			
 			//Checking answer and deleting all lines from the table
-			if(empty($result['error'])){
-				if($result['rows'] == count($data)){
+
+			if(empty($result['error'])) {
+
+				if($result['rows'] == count($data)) {
+
 					db_truncate('cleantalk_sfw_logs')->execute();
 					return true;
+
 				}
-			}else{
+			}
+
+			else {
+
 				return $result;
+
 			}
 				
-		}else{
+		}
+
+		else {
+
 			return array('error' => true, 'error_string' => 'NO_LOGS_TO_SEND');
+
 		}
 	}
 	

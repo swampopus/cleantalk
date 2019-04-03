@@ -309,7 +309,7 @@ class CleantalkFuncs
 	/**
 	 * Cleantalk inner function - performs antispam checking.
 	 */
-	static public function _cleantalk_check_spam($spam_check, $form_errors) {
+	static public function _cleantalk_check_spam($spam_check, $form_errors = null) {
 	    global $user, $cleantalk_executed, $language;
 
 	    if (empty($spam_check) || !isset($spam_check['type']))

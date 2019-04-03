@@ -104,6 +104,7 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_check_webforms');
   variable_del('cleantalk_check_contact_forms');
   variable_del('cleantalk_check_forum_topics');
+  variable_del('cleantalk_check_search_form');
   variable_del('cleantalk_work_url');
   variable_del('cleantalk_server_url');
   variable_del('cleantalk_server_ttl');
