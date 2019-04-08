@@ -357,7 +357,7 @@ function cleantalk_init()
             $get_query = explode("/", $_GET['q']);
             $search_word = $get_query[2];
 
-            $spam_check['type'] = 'custom_contact_form';
+            $spam_check['type'] = 'site_search_drupal7';
 
             $spam_check['sender_email'] = !empty($user->mail) ? $user->mail : '';
             $spam_check['sender_nickname'] = !empty($user->name) ? $user->name : '';    
