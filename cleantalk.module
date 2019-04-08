@@ -338,6 +338,40 @@ function cleantalk_init()
             }
      
         }
+
+        if (isset($_GET['q']) && strpos($_GET['q'], 'search') !== false && module_exists('search') && variable_get('cleantalk_check_search_form', 0)) // Search form
+        {
+            // Setup index search results
+            $skip_index_results = array(
+                '#type' => 'html_tag',
+                '#tag' => 'meta',
+                '#attributes' => array(
+                    'name' =>  'robots',
+                    'content' => 'noindex',
+                )
+            );
+
+            // Add header meta tag for skip index results
+            drupal_add_html_head($skip_index_results, 'skip_index_results');
+
+            $get_query = explode("/", $_GET['q']);
+            $search_word = $get_query[2];
+
+            $spam_check['type'] = 'custom_contact_form';
+
+            $spam_check['sender_email'] = !empty($user->mail) ? $user->mail : '';
+            $spam_check['sender_nickname'] = !empty($user->name) ? $user->name : '';    
+            $spam_check['message_title'] = '';
+            $spam_check['message_body'] = $search_word;
+
+            if ($spam_check['sender_email'] != '' || $spam_check['message_body'])
+            {
+                $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
+
+                if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) 
+                   CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);
+            }
+        }        
     }
 }
 
