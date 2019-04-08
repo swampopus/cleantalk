@@ -317,7 +317,7 @@ function cleantalk_init()
                 }
             }
         }
-        if(sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && variable_get('cleantalk_check_ccf', 0)) //Custom Contact forms
+        if(sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && variable_get('cleantalk_check_ccf', 0) && strpos($_SERVER['REQUEST_URI'], 'cron.php') === false) //Custom Contact forms
         {
             $spam_check = array();
             $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
