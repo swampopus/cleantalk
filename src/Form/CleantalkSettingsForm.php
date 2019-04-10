@@ -74,6 +74,25 @@ function cleantalk_settings_form($form, &$form_state) {
     ),    
   );  
 
+  $form['cleantalk_search'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Search'),
+  );
+
+  $form['cleantalk_search']['cleantalk_check_search_form'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Check search form'),
+    '#default_value' => variable_get('cleantalk_check_search_form', 0),
+    '#description' => t('Enabling this option will allow you to check search form on your website.'),
+  );
+
+  $form['cleantalk_search']['cleantalk_add_search_noindex'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable noindex for search form'),
+    '#default_value' => variable_get('cleantalk_add_search_noindex', 0),
+    '#description' => t('Add html meta-tag robots-noindex to skip index for search form.'), 
+  );
+
   $form['cleantalk_check_register'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check registrations'),
@@ -101,13 +120,6 @@ function cleantalk_settings_form($form, &$form_state) {
     '#default_value' => variable_get('cleantalk_check_forum_topics', 0),
     '#description' => t('Enabling this option will allow you to check all forum topics on your website.'),
   );  
-
-  $form['cleantalk_check_search_form'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Check search form'),
-    '#default_value' => variable_get('cleantalk_check_search_form', 0),
-    '#description' => t('Enabling this option will allow you to check search form on your website.'),
-  );
 
   $form['cleantalk_check_ccf'] = array(
     '#type' => 'checkbox',

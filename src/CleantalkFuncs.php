@@ -419,6 +419,7 @@ class CleantalkFuncs
 	        case 'contact':
 	        case 'webform':
 	        case 'custom_contact_form':
+	        case 'site_search_drupal7':
 	            $timelabels_key = 'mail_error_comment';
         		if (isset($spam_check['message_title']) && is_array($spam_check['message_title']))
 					$spam_check['message_title'] = implode("\n\n", $spam_check['message_title']); 

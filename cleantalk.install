@@ -124,6 +124,7 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_api_account_name_ob');
   variable_del('cleantalk_api_ip_license');
   variable_del('cleantalk_show_renew_banner');
+  variable_del('cleantalk_add_search_noindex');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
   db_drop_table('cleantalk_sfw_logs');  
