@@ -30,7 +30,7 @@ function cleantalk_check_users_form($form, &$form_state) {
 			foreach ($form_state['spam_users'] as $spam_user) {
 				$rows[] = array(
 			    	'spam_user_name' => l($spam_user->name, 'user/'.$spam_user->uid),
-			    	'spam_user_email' => $spam_user->mail,
+			    	'spam_user_email' => '<a target="_blank" href = "https://cleantalk.org/blacklists/'.$spam_user->mail.'">'.$spam_user->mail.'</a>',
 			    	'spam_user_created' => date("Y-m-d H:i:s", $spam_user->created),
 			    	'spam_user_status' => ($spam_user->status == 1) ? 'Active':'Inactive',
 			    	'#attributes' => array('user_id' => $spam_user->uid, 'class' => array('cleantalk-spam-users-row')),

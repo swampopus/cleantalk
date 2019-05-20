@@ -31,7 +31,7 @@ function cleantalk_check_comments_form($form, &$form_state) {
 				{
 					$rows[] = array(
 				    	'spam_comment_name' => $spam_comment->name,
-				    	'spam_comment_email' => $spam_comment->mail,
+				    	'spam_comment_email' => '<a target="_blank" href = "https://cleantalk.org/blacklists/'.$spam_comment->mail.'">'.$spam_comment->mail.'</a>',
 				    	'spam_comment_subject' => $spam_comment->subject,
 				    	'spam_comment_created' => date("Y-m-d H:i:s", $spam_comment->created),
 				    	'spam_comment_status' => ($spam_comment->status == 1) ? 'Active':'Inactive',
