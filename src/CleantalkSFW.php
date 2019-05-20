@@ -94,7 +94,7 @@ class CleantalkSFW extends CleantalkHelper {
 
 		}
 		
-		db_merge('cleantalk_sfw_logs')->key(['ip' => $ip])->fields(['ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()])->expression('all_entries', 'all_entries + :inc', [':inc' => 1])->expression('blocked_entries', 'blocked_entries + :inc', [':inc' => 1])->expression('entries_timestamp', time())->execute();
+		db_merge('cleantalk_sfw_logs')->key(array('ip' => $ip))->fields(array('ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()))->expression('all_entries', 'all_entries + :inc', array(':inc' => 1))->expression('blocked_entries', 'blocked_entries + :inc', array(':inc' => 1))->expression('entries_timestamp', time())->execute();
 	}
 	
 	/*
