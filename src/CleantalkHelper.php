@@ -18,38 +18,6 @@
 class CleantalkHelper
 {
 	const URL = 'https://api.cleantalk.org';
-
-	public static $cdn_pool = array(
-		'cloud_flare' => array(
-			'ipv4' => array(
-				'103.21.244.0/22',
-				'103.22.200.0/22',
-				'103.31.4.0/22',
-				'104.16.0.0/12',
-				'108.162.192.0/18',
-				'131.0.72.0/22',
-				'141.101.64.0/18',
-				'162.158.0.0/15',
-				'172.64.0.0/13',
-				'173.245.48.0/20',
-				'185.93.231.18/20', // User fix
-				'185.220.101.46/20', // User fix
-				'188.114.96.0/20',
-				'190.93.240.0/20',
-				'197.234.240.0/22',
-				'198.41.128.0/17',
-			),
-			'ipv6' => array(
-				'2400:cb00::/32',
-				'2405:8100::/32',
-				'2405:b500::/32',
-				'2606:4700::/32',
-				'2803:f800::/32',
-				'2c0f:f248::/32',
-				'2a06:98c0::/29',
-			),
-		),
-	);
 	
 	public static $private_networks = array(
 		'v4' => array(
@@ -109,11 +77,12 @@ class CleantalkHelper
 		
 		// Cloud Flare
 		if(isset($ips['cloud_flare'])){
-			if(isset($headers['Cf-Connecting-Ip'], $headers['Cf-Ipcountry'], $headers['Cf-Ray'])){
-				$ip_type = self::ip_validate($_SERVER['REMOTE_ADDR']);
+			if(isset($headers['CF-Connecting-IP'], $headers['CF-IPCountry'], $headers['CF-RAY']) || isset($headers['Cf-Connecting-Ip'], $headers['Cf-Ipcountry'], $headers['Cf-Ray'])){
+				$tmp = isset($headers['CF-Connecting-IP']) ? $headers['CF-Connecting-IP'] : $headers['Cf-Connecting-Ip'];
+				$tmp = strpos($tmp, ',') !== false ? explode(',', $tmp) : (array)$tmp;
+				$ip_type = self::ip_validate(trim($tmp[0]));
 				if($ip_type){
-//					if(self::ip_mask_match($ips['remote_addr'], self::$cdn_pool['cloud_flare']['ipv4'])){
-						$ips['cloud_flare'] = $headers['Cf-Connecting-Ip'];
+						$ips['real'] = $ip_type == 'v6' ? self::ip_v6_normalize(trim($tmp[0])) : trim($tmp[0]);
 				}
 			}
 		}
@@ -195,7 +164,7 @@ class CleantalkHelper
 	 * @param ip string  
 	 * @param cird mixed (string|array of strings)
 	*/
-	static public function ip_mask_match($ip, $cidr){
+	static public function ip_mask_match($ip, $cidr, $ip_type = 'v4', $xtet_count = 0){
 
 		if(is_array($cidr)){
 			foreach($cidr as $curr_mask){
@@ -337,7 +306,7 @@ class CleantalkHelper
 	}
 
 	static function ip_is_private_network($ip, $ip_type = 'v4'){
-		return self::ip_mask_match($ip, self::$private_networks[$ip_type]);
+		return self::ip_mask_match($ip, self::$private_networks[$ip_type], $ip_type);
 	}
 
 	/**
