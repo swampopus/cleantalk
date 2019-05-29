@@ -303,7 +303,7 @@ class CleantalkFuncs
 	 * Cleantalk inner function - gets JavaScript checking value.
 	 */
 	static public function _cleantalk_get_checkjs_value() {
-	    return md5(variable_get('cleantalk_authkey', '') . '+' . variable_get('site_mail', ini_get('sendmail_from')));
+	    return md5(variable_get('cleantalk_authkey', ''));
 	}
 
 	/**
