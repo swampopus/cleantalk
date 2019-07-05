@@ -38,7 +38,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_comments']['cleantalk_check_comments'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check comments'),
-    '#default_value' => variable_get('cleantalk_check_comments', 0),
+    '#default_value' => variable_get('cleantalk_check_comments', 1),
     '#description' => t('Enabling this option will allow you to check all comments on your website.'),   
   ); 
 
@@ -82,13 +82,13 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_search']['cleantalk_check_search_form'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check search form'),
-    '#default_value' => variable_get('cleantalk_check_search_form', 0),
+    '#default_value' => variable_get('cleantalk_check_search_form', 1),
     '#description' => t('Enabling this option will allow you to check search form on your website.'),
   );
 
   $form['cleantalk_search']['cleantalk_add_search_noindex'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable noindex for search form'),
+    '#title' => t('Add noindex for search form'),
     '#default_value' => variable_get('cleantalk_add_search_noindex', 0),
     '#description' => t('Add html meta-tag robots-noindex to skip index for search form.'), 
   );
@@ -96,7 +96,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_check_register'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check registrations'),
-    '#default_value' => variable_get('cleantalk_check_register', 0),
+    '#default_value' => variable_get('cleantalk_check_register', 1),
     '#description' => t('Enabling this option will allow you to check all registrations on your website.'),
   );
 
@@ -110,7 +110,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_check_contact_forms'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check contact forms'),
-    '#default_value' => variable_get('cleantalk_check_contact_forms', 0),
+    '#default_value' => variable_get('cleantalk_check_contact_forms', 1),
     '#description' => t('Enabling this option will allow you to check all contact forms on your website.'),
   );
 
