@@ -461,7 +461,7 @@ class CleantalkFuncs
 	        {
 	            // Cleantalk error so we go default way (no action at all).
 	            $ret_val['errno'] = 1;
-	            if($checkjs == 0) 
+	            if($ct_request->js_on == 0) 
 	                $ret_val['allow'] = 0;
 
 	            // Just inform admin.
