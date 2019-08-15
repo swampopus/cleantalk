@@ -93,6 +93,34 @@ function cleantalk_settings_form($form, &$form_state) {
     '#description' => t('Add html meta-tag robots-noindex to skip index for search form.'), 
   );
 
+  $form['cleantalk_exclusions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Exclusions'),
+  );
+
+  $form['cleantalk_exclusions']['cleantalk_url_checking'] = array(
+    '#type' => 'textfield',
+    '#title' => t('URL checking'),
+    '#default_value' => variable_get('cleantalk_url_checking', 'all'),
+    '#description' => t('Enable spam check only for specific URLs. List them seperated by commas. Set \'all\' for checking all URLs.') . '<br /><span class="admin-disabled">' .
+      t('Note: Don\'t change this if you\'re unsure!') .
+    '</span>',
+  );
+
+  $form['cleantalk_exclusions']['cleantalk_url_exclusions'] = array(
+    '#type' => 'textfield',
+    '#title' => t('URL exclusions'),
+    '#default_value' => variable_get('cleantalk_url_exclusions', ''),
+    '#description' => t('Exclude urls from spam check. List them separated by commas.'),
+  );
+
+  $form['cleantalk_exclusions']['cleantalk_fields_exclusions'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Fields exclusions'),
+    '#default_value' => variable_get('cleantalk_fields_exclusions', ''),
+    '#description' => t('Exclude fields from spam check. List them separated by commas.'),
+  );
+
   $form['cleantalk_check_register'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check registrations'),
@@ -127,7 +155,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#default_value' => variable_get('cleantalk_check_ccf', 0),
     '#description' => t('Enabling this option will allow you to check all forms on your website.') .
     '<br /><span class="admin-disabled">' .
-    t('Note: May cause conflicts!') .
+      t('Note: May cause conflicts!') .
     '</span>',
   );
   

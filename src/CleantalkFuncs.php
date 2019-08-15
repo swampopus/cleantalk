@@ -2,7 +2,6 @@
 require_once(dirname(__FILE__) . '/Cleantalk.php');
 require_once(dirname(__FILE__) . '/CleantalkRequest.php');
 require_once(dirname(__FILE__) . '/CleantalkHelper.php');
-require_once(dirname(__FILE__) . '/CleantalkCustomConfig.php');
 require_once(dirname(__FILE__) . '/CleantalkSFW.php');
 
 /**
@@ -152,7 +151,7 @@ class CleantalkFuncs
 	    'details_page_count',
 	    'details_finished',
 	  );
-	    $fields_exclusions = CleantalkCustomConfig::get_fields_exclusions();
+	    $fields_exclusions = explode(',', variable_get('cleantalk_fields_exclusions', ''));
 	    if ($fields_exclusions)
 	        array_merge($skip_fields_with_strings,$fields_exclusions);  
 	  // Reset $message if we have a sign-up data
@@ -333,7 +332,7 @@ class CleantalkFuncs
 	            return;
 	    }
 
-	    $url_checking = CleantalkCustomConfig::get_url_checking();
+	    $url_checking = explode(',', variable_get('cleantalk_url_checking',''));
 	    if ($url_checking)
 	    {
 	    	$url_check = in_array('all', $url_checking) ? true : false;
@@ -344,7 +343,7 @@ class CleantalkFuncs
 		                $url_check = true; 	    		
 	    	}
 
-		    $url_exclusion = CleantalkCustomConfig::get_url_exclusions();
+		    $url_exclusion = explode(',', variable_get('cleantalk_url_exclusions',''));
 		    if ($url_exclusion)
 		    {
 		        foreach ($url_exclusion as $key=>$value)
@@ -354,7 +353,6 @@ class CleantalkFuncs
 		    if (!$url_check)
 	    		return;                     
 	    }
-
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
 	    $ct_ws = self::_cleantalk_get_ws();
 
