@@ -88,6 +88,41 @@ function cleantalk_install()
     'primary key' => array('ip'),
   );
   db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
+
+  db_drop_table('cleantalk_sessions');
+    $cleantalk_sessions = array(
+    'description' => 'SpamFireWall logs.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'id.'
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 40,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'name.'
+      ),
+    'value' => array(
+        'type' => 'text',
+        'size' => 'small',
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'value.'
+      ),
+      'last_update' => array(
+        'type' => 'datetime',
+        'mysql_type' => 'datetime',
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'time().'
+      )
+    ),
+    'primary key' => array('id'),
+  );
+  db_create_table('cleantalk_sessions', $cleantalk_sessions);
 }
 /**
  * Implements hook_uninstall().
@@ -130,7 +165,8 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_add_search_noindex');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
-  db_drop_table('cleantalk_sfw_logs');  
+  db_drop_table('cleantalk_sfw_logs');
+  db_drop_table('cleantalk_sessions');  
 }
 
 /**

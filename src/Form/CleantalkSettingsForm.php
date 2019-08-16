@@ -158,7 +158,12 @@ function cleantalk_settings_form($form, &$form_state) {
       t('Note: May cause conflicts!') .
     '</span>',
   );
-  
+  $form['cleantalk_alternative_cookies_session'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use alternative mechanism for cookies'),
+    '#default_value' => variable_get('cleantalk_alternative_cookies_session', 0),
+    '#description' => t('Doesn\'t use cookie or PHP sessions. Collect data for all types of bots.'),
+  );  
   $form['cleantalk_sfw'] = array(
     '#type' => 'checkbox',
     '#title' => t('Spam FireWall'),
