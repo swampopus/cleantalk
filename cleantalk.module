@@ -2,7 +2,7 @@
 require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
-define("CLEANTALK_USER_AGENT", 'drupal-44');
+define("CLEANTALK_USER_AGENT", 'drupal-45');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 /**
