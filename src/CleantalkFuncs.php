@@ -331,28 +331,36 @@ class CleantalkFuncs
 	        if ($count >= $ct_comments) 
 	            return;
 	    }
+	    if (variable_get('cleantalk_url_checking',''))
+	    {	    	
+		    $url_checking = explode(',', variable_get('cleantalk_url_checking',''));
 
-	    $url_checking = explode(',', variable_get('cleantalk_url_checking',''));
-	    if ($url_checking && is_array($url_checking) && count($url_checking) > 0)
-	    {
-	    	$url_check = in_array('all', $url_checking) ? true : false;
-	    	if (!$url_check)
-	    	{
-		        foreach ($url_checking as $key=>$value)
-		            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
-		                $url_check = true; 	    		
-	    	}
-
-		    $url_exclusion = explode(',', variable_get('cleantalk_url_exclusions',''));
-		    if ($url_exclusion && is_array($url_exclusion) && count($url_exclusion) > 0)
+		    if ($url_checking && is_array($url_checking) && count($url_checking) > 0)
 		    {
-		        foreach ($url_exclusion as $key=>$value)
-		            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
-		                $url_check = false;         
-		    }	
-		    if (!$url_check)
-	    		return;                     
+		    	$url_check = in_array('all', $url_checking) ? true : false;
+		    	if (!$url_check)
+		    	{
+			        foreach ($url_checking as $key=>$value)
+			            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
+			                $url_check = true; 	    		
+		    	}
+		    	if (variable_get('cleantalk_url_exclusions','')) 
+		    	{
+				    $url_exclusion = explode(',', variable_get('cleantalk_url_exclusions',''));
+				    if ($url_exclusion && is_array($url_exclusion) && count($url_exclusion) > 0)
+				    {
+
+				        foreach ($url_exclusion as $key=>$value)
+				            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
+				                $url_check = false;         
+				    }	
+				    if (!$url_check)
+			    		return;   		    		
+		    	}
+                  
+		    }	    	
 	    }
+
 	    $ct_authkey = variable_get('cleantalk_authkey', '');
 	    $ct_ws = self::_cleantalk_get_ws();
 
