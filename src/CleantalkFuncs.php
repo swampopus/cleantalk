@@ -152,7 +152,7 @@ class CleantalkFuncs
 	    'details_finished',
 	  );
 	    $fields_exclusions = explode(',', variable_get('cleantalk_fields_exclusions', ''));
-	    if ($fields_exclusions)
+	    if ($fields_exclusions && is_array($fields_exclusions) && count($fields_exclusions) > 0)
 	        array_merge($skip_fields_with_strings,$fields_exclusions);  
 	  // Reset $message if we have a sign-up data
 	    $skip_message_post = array(
@@ -341,22 +341,41 @@ class CleantalkFuncs
 		    	if (!$url_check)
 		    	{
 			        foreach ($url_checking as $key=>$value)
+			        {
+			        	if (strpos($value,'node') !== false && strpos($_SERVER['REQUEST_URI'],'q=comment/reply/') !== false)
+			        	{
+			        		$get_node = array_values(array_slice(explode('/', $value), -1))[0];	        		
+			        		$current_reply_id = array_values(array_slice(explode('/',$_SERVER['REQUEST_URI']), -1))[0];	
+
+			        		if ($get_node == $current_reply_id)
+			        			$url_check = true;
+			        	}
 			            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
 			                $url_check = true; 	    		
+			        }
 		    	}
 		    	if (variable_get('cleantalk_url_exclusions','')) 
 		    	{
 				    $url_exclusion = explode(',', variable_get('cleantalk_url_exclusions',''));
 				    if ($url_exclusion && is_array($url_exclusion) && count($url_exclusion) > 0)
 				    {
-
 				        foreach ($url_exclusion as $key=>$value)
+				        {
+				        	if (strpos($value,'node') !== false && strpos($_SERVER['REQUEST_URI'],'q=comment/reply/') !== false)
+				        	{
+				        		$get_node = array_values(array_slice(explode('/', $value), -1))[0];	        		
+				        		$current_reply_id = array_values(array_slice(explode('/',$_SERVER['REQUEST_URI']), -1))[0];	
+
+				        		if ($get_node == $current_reply_id)
+				        			$url_check = false;
+				        	}				        	
 				            if (strpos($_SERVER['REQUEST_URI'],$value) !== false)
 				                $url_check = false;         
-				    }	
-				    if (!$url_check)
-			    		return;   		    		
+				        }
+				    }			    		
 		    	}
+			    if (!$url_check)
+	    			return;   
                   
 		    }	    	
 	    }
