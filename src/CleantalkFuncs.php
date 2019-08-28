@@ -318,6 +318,23 @@ class CleantalkFuncs
 	    	return;
 		if (user_access('administer modules') && path_is_admin(current_path()))
 			return;
+
+		$roles = variable_get('cleantalk_roles_exclusions');
+		
+		if ($roles) {
+
+			$set_check = false;
+
+			foreach ($roles as $role_name) {
+				if (self::_cleantalk_user_has_role_name($role_name)) {
+					$set_check = true;
+				}
+			}
+
+			if (!$set_check) {
+				return;
+			}
+		}
 	    // Don't check reged user with >= 'cleantalk_check_comments_min_approved' approved msgs.
 	    if ($user->uid > 0 && module_exists('comment')) 
 	    {
@@ -634,7 +651,16 @@ class CleantalkFuncs
 		return false;
 
 	}
+	static public function _cleantalk_user_has_role_name($role_name, $user = NULL) {
+		if ($user == NULL) {
+			global $user;
+		}
+		if (is_array($user->roles) && in_array($role_name, array_values($user->roles))) {
+			return TRUE;
+		}
 
+		return FALSE;
+	}
 	/**
 	 * Cleantalk inner function - perform remote call
 	 */

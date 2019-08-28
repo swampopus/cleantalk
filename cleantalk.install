@@ -143,6 +143,7 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_url_checking');
   variable_del('cleantalk_url_exclusions');
   variable_del('cleantalk_fields_exclusions');
+  variable_del('cleantalk_roles_exclusions');
   variable_del('cleantalk_work_url');
   variable_del('cleantalk_server_url');
   variable_del('cleantalk_server_ttl');

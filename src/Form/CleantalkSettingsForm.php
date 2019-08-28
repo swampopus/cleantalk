@@ -121,6 +121,15 @@ function cleantalk_settings_form($form, &$form_state) {
     '#description' => t('Exclude fields from spam check. List them separated by commas.'),
   );
 
+  $form['cleantalk_exclusions']['cleantalk_roles_exclusions'] = array(
+    '#type' => 'select',
+    '#title' => t('Roles checking'),
+    '#options' => cleantalk_get_user_roles(),
+    '#multiple' => true,
+    '#default_value' => variable_get('cleantalk_roles_exclusions', array(1,2)),
+    '#description' => t('Select roles that you want to be checked.'),
+  );
+
   $form['cleantalk_check_register'] = array(
     '#type' => 'checkbox',
     '#title' => t('Check registrations'),
@@ -218,4 +227,15 @@ function cleantalk_settings_form_validate($form, &$form_state) {
     else
       form_set_error('cleantalk_authkey', t('Access key is not valid.'));
   }
+}
+
+function cleantalk_get_user_roles() {
+  $result = db_select('role', 'r')->fields('r', array('name'))->execute();
+  $user_roles = array();
+  while ($role = $result->fetchAssoc()) {
+    if (isset($role['name'])) {
+      $user_roles[] = $role['name'];
+    }
+  }
+  return $user_roles;
 }
