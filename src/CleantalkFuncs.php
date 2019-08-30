@@ -172,6 +172,9 @@ class CleantalkFuncs
 	        if($decoded_json_value !== null)
 	          $value = $decoded_json_value;
 	      }
+
+	      if (strpos($key, 'ajax_') !== false)
+            continue;
 	      
 	      if(!is_array($value) && !is_object($value)){
 	        
@@ -180,8 +183,6 @@ class CleantalkFuncs
 	        
 	        if($value === '')
 	          continue;
-	      	if (strpos($key, 'ajax_') !== false)
-	        	continue;
 	        
 	        // Skipping fields names with strings from (array)skip_fields_with_strings
 	        foreach($skip_fields_with_strings as $needle){
