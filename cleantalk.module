@@ -266,7 +266,11 @@ function cleantalk_init()
           'type' => 'inline',
           'scope' => 'footer',
           'weight' => 5,
-          'cache' => FALSE,
+          /*'cache' => FALSE,
+		   * This not need here
+		   * 'cache' option Used only when 'type' references a JavaScript file
+		   * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_add_js/7.x
+		   */
           'every_page' => TRUE,
         )
     );     
