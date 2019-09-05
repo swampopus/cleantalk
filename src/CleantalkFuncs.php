@@ -341,8 +341,8 @@ class CleantalkFuncs
 
       $set_check = false;
 
-      foreach ($roles as $role_name) {
-        if (self::_cleantalk_user_has_role_name($role_name)) {
+      foreach ($roles as $role_id) {
+        if (self::_cleantalk_user_has_role_id($role_id)) {
           $set_check = true;
         }
       }
@@ -652,12 +652,12 @@ class CleantalkFuncs
 
   }
 
-  static public function _cleantalk_user_has_role_name($role_name, $user = NULL)
+  static public function _cleantalk_user_has_role_id($role_id, $user = NULL)
   {
     if ($user == NULL) {
       global $user;
     }
-    if (is_array($user->roles) && in_array($role_name, array_values($user->roles))) {
+    if (is_array($user->roles) && in_array($role_id, array_keys($user->roles))) {
       return TRUE;
     }
 
