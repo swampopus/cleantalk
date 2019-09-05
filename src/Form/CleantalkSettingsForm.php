@@ -215,7 +215,8 @@ function cleantalk_settings_form_validate($form, &$form_state) {
     if (isset($is_valid['valid']) && $is_valid['valid'] == 1)
     {
       CleantalkHelper::api_method_send_empty_feedback($cleantalk_auth_key, CLEANTALK_USER_AGENT);
-      $account_status = CleantalkHelper::api_method__notice_paid_till($cleantalk_auth_key);
+      $path_to_cms = preg_replace('/http[s]?:\/\//', '', $GLOBALS['base_url'], 1);
+      $account_status = CleantalkHelper::api_method__notice_paid_till($cleantalk_auth_key, $path_to_cms);
       if (empty($account_status['error']))
       {
         variable_set('cleantalk_api_show_notice', isset($account_status['show_notice']) ? $account_status['show_notice'] : 0);
