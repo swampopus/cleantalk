@@ -15,7 +15,7 @@ class CleantalkFuncs
   */
   static public function _cleantalk_get_submit_time()
   {
-    return self::_cleantalk_apbct_cookies_test() == 1 ? time() - (int)$_COOKIE['apbct_timestamp'] : null;
+    return self::_cleantalk_apbct_cookies_test() == 1 ? time() - (int)self::_apbct_getcookie('apbct_timestamp') : null;
   }
 
   /*
@@ -25,6 +25,14 @@ class CleantalkFuncs
    */
   static public function _cleantalk_apbct_cookies_set()
   {
+    // If Cookies are disabled
+    if (!variable_get('cleantalk_set_cookies', 1)) {
+      return;
+    }
+    // If headers were sent
+    if (headers_sent()) {
+      return;
+    }
 
     // Cookie names to validate
     $cookie_test_value = array(
@@ -34,45 +42,162 @@ class CleantalkFuncs
 
     // Submit time
     $apbct_timestamp = time();
-    setcookie('apbct_timestamp', $apbct_timestamp, 0, '/');
+    // Fix for submit_time = 0
+    if(variable_get('cleantalk_alternative_cookies_session', 0)){
+      // by database
+      $prev_time = self::_apbct_getcookie('apbct_prev_timestamp');
+      if(is_null($prev_time)){
+        self::_apbct_setcookie('apbct_timestamp', $apbct_timestamp);
+        self::_apbct_setcookie('apbct_prev_timestamp', $apbct_timestamp);
+        $cookie_test_value['check_value'] .= $apbct_timestamp;
+      } else {
+        self::_apbct_setcookie('apbct_timestamp', $prev_time);
+        self::_apbct_setcookie('apbct_prev_timestamp', $apbct_timestamp);
+        $cookie_test_value['check_value'] .= $prev_time;
+      }
+    } else {
+      // by cookies
+      self::_apbct_setcookie('apbct_timestamp', $apbct_timestamp);
+      $cookie_test_value['check_value'] .= $apbct_timestamp;
+    }
     $cookie_test_value['cookies_names'][] = 'apbct_timestamp';
-    $cookie_test_value['check_value'] .= $apbct_timestamp;
-
     //Previous referer
     if (!empty($_SERVER['HTTP_REFERER'])) {
-      setcookie('apbct_prev_referer', $_SERVER['HTTP_REFERER'], 0, '/');
+      self::_apbct_setcookie('apbct_prev_referer', $_SERVER['HTTP_REFERER']);
       $cookie_test_value['cookies_names'][] = 'apbct_prev_referer';
       $cookie_test_value['check_value'] .= $_SERVER['HTTP_REFERER'];
     }
 
     // Cookies test
     $cookie_test_value['check_value'] = md5($cookie_test_value['check_value']);
-    setcookie('apbct_cookies_test', json_encode($cookie_test_value), 0, '/');
+    self::_apbct_setcookie('apbct_cookies_test', json_encode($cookie_test_value));
+  }
+
+  /**
+   * Save our variables into cookies OR sessions
+   *
+   * @param $name     string   Name of our variables to save
+   * @param $value    string   Value of our variables to save
+   */
+  static private function _apbct_setcookie($name, $value)
+  {
+    if (variable_get('cleantalk_alternative_cookies_session', 0)) {
+
+      self::_apbct_alt_sessions__remove_old();
+
+      // Into database
+      db_query("INSERT INTO {cleantalk_sessions}
+      (id, name, value, last_update)
+      VALUES (:id, :name, :value, :last_update)
+      ON DUPLICATE KEY UPDATE
+      value = :value,
+      last_update = :last_update", array(
+        ':id' => self::_apbct_alt_session__id__get(),
+        ':name' => $name,
+        ':value' => $value,
+        ':last_update' => date('Y-m-d H:i:s')
+      ));
+
+    } else {
+
+      // Into cookies
+      setcookie($name, $value, 0, '/');
+
+    }
+  }
+
+  /**
+   * Get our variables from cookies OR sessions
+   *
+   * @param $name     string    Name of necessary variable to get
+   *
+   * @return string|null
+   */
+  static private function _apbct_getcookie($name)
+  {
+    if (variable_get('cleantalk_alternative_cookies_session', 0)) {
+
+      // From database
+      $value = db_query("SELECT value FROM {cleantalk_sessions} WHERE id = :id AND name = :name",
+        array(
+          ':id' => self::_apbct_alt_session__id__get(),
+          ':name' => $name
+        ))->fetchField();
+      if (false !== $value) {
+        return $value;
+      } else {
+        return null;
+      }
+
+    } else {
+
+      // From cookies
+      if (isset($_COOKIE[$name])) {
+        return $_COOKIE[$name];
+      } else {
+        return null;
+      }
+
+    }
+
+  }
+
+  /**
+   * Clean 'cleantalk_sessions' table
+   */
+  static private function _apbct_alt_sessions__remove_old()
+  {
+    if (rand(0, 1000) < APBCT_SEESION__CHANCE_TO_CLEAN) {
+
+      db_query("DELETE
+      FROM {cleantalk_sessions}
+      WHERE last_update < NOW() - INTERVAL '. APBCT_SEESION__LIVE_TIME .' SECOND
+      LIMIT 100000;");
+
+    }
+  }
+
+  /**
+   * Get hash session ID
+   *
+   * @return string
+   */
+  static private function _apbct_alt_session__id__get()
+  {
+    $id = CleantalkHelper::ip_get(array('real'))
+      . filter_input(INPUT_SERVER, 'HTTP_USER_AGENT')
+      . filter_input(INPUT_SERVER, 'HTTP_ACCEPT_LANGUAGE');
+    return hash('sha256', $id);
   }
 
   /**
    * Cookie test
-   * @return int
+   * @return int   1|0
    */
   static public function _cleantalk_apbct_cookies_test()
   {
-    if (isset($_COOKIE['apbct_cookies_test'])) {
+    // If Cookies are disabled by settings
+    if (!variable_get('cleantalk_set_cookies', 1)) {
+      return 0;
+    }
 
-      $cookie_test = json_decode(stripslashes($_COOKIE['apbct_cookies_test']), true);
+    $cookie_test = json_decode(stripslashes(self::_apbct_getcookie('apbct_cookies_test')), true);
 
-      $check_srting = trim(variable_get('cleantalk_authkey', ''));
-      foreach ($cookie_test['cookies_names'] as $cookie_name) {
-        $check_srting .= isset($_COOKIE[$cookie_name]) ? $_COOKIE[$cookie_name] : '';
-      }
-      unset($cokie_name);
+    if (is_null($cookie_test)) {
+      return 0;
+    }
 
-      if ($cookie_test['check_value'] == md5($check_srting)) {
-        return 1;
-      } else {
-        return 0;
-      }
+    $check_string = trim(variable_get('cleantalk_authkey', ''));
+
+    foreach ($cookie_test['cookies_names'] as $cookie_name) {
+      $check_string .= self::_apbct_getcookie($cookie_name);
+    }
+    unset($cokie_name);
+
+    if ($cookie_test['check_value'] == md5($check_string)) {
+      return 1;
     } else {
-      return null;
+      return 0;
     }
   }
 
@@ -332,6 +457,7 @@ class CleantalkFuncs
 
     if ($cleantalk_executed)
       return;
+
     if (user_access('administer modules') && path_is_admin(current_path()))
       return;
 
@@ -351,6 +477,7 @@ class CleantalkFuncs
         return;
       }
     }
+
     // Don't check reged user with >= 'cleantalk_check_comments_min_approved' approved msgs.
     if ($user->uid > 0 && module_exists('comment')) {
       $result = db_query(
@@ -422,6 +549,8 @@ class CleantalkFuncs
       'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
       'cleantalk_check_forum_topics' => variable_get('cleantalk_check_forum_topics', ''),
       'cleantalk_check_ccf' => variable_get('cleantalk_check_ccf', ''),
+      'cleantalk_set_cookies' => variable_get('cleantalk_set_cookies', 1),
+      'cleantalk_alternative_cookies_session' => variable_get('cleantalk_alternative_cookies_session', 0),
       'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
       'cleantalk_ssl' => variable_get('cleantalk_ssl', ''),
       'cleantalk_link' => variable_get('cleantalk_link', ''),
@@ -443,7 +572,7 @@ class CleantalkFuncs
         'mouse_cursor_positions' => (isset($_COOKIE['apbct_pointer_data']) ? json_decode($_COOKIE['apbct_pointer_data']) : ''),
         'key_press_timestamp' => (isset($_COOKIE['apbct_fkp_timestamp']) ? $_COOKIE['apbct_fkp_timestamp'] : ''),
         'page_set_timestamp' => (isset($_COOKIE['apbct_ps_timestamp']) ? $_COOKIE['apbct_ps_timestamp'] : 0),
-        'REFFERRER_PREVIOUS' => isset($_COOKIE['apbct_prev_referer']) ? $_COOKIE['apbct_prev_referer'] : null,
+        'REFFERRER_PREVIOUS' => self::_apbct_getcookie('apbct_prev_referer'),
         'cookies_enabled' => self::_cleantalk_apbct_cookies_test(),
         'form_validation' => ($form_errors && is_array($form_errors)) ? json_encode(array('validation_notice' => json_encode($form_errors), 'page_url' => $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'])) : null,
       )

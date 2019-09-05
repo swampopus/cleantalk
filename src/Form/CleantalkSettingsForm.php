@@ -167,8 +167,25 @@ function cleantalk_settings_form($form, &$form_state) {
       t('Note: May cause conflicts!') .
     '</span>',
   );
+
+  $form['cleantalk_set_cookies'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Set cookies'),
+      '#default_value' => variable_get('cleantalk_set_cookies', 1),
+      '#description' => t('Turn this option off to deny plugin generates any cookies on website front-end. This option is helpful if you use Varnish. But most of contact forms will not be protected if the option is turned off!') . '<br /><span class="admin-disabled">' .
+        t('Note: We strongly recommend you to enable this otherwise it could cause false positives spam detection.') .
+      '</span>',
+  );
+
+  if( variable_get('cleantalk_set_cookies', 1) ) {
+    $cleantalk_alternative_cookies_session_option_disabled = false;
+  } else {
+    $cleantalk_alternative_cookies_session_option_disabled = true;
+  }
+
   $form['cleantalk_alternative_cookies_session'] = array(
     '#type' => 'checkbox',
+    '#disabled' => $cleantalk_alternative_cookies_session_option_disabled,
     '#title' => t('Use alternative mechanism for cookies'),
     '#default_value' => variable_get('cleantalk_alternative_cookies_session', 0),
     '#description' => t('Doesn\'t use cookie or PHP sessions. Collect data for all types of bots.'),

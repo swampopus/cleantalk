@@ -5,6 +5,10 @@ require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 define("CLEANTALK_USER_AGENT", 'drupal-45');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
+// Sessions
+define('APBCT_SEESION__LIVE_TIME', 86400*2);
+define('APBCT_SEESION__CHANCE_TO_CLEAN', 100);
+
 /**
  * @file
  * Main CleanTalk integration module functions.
@@ -249,6 +253,7 @@ function cleantalk_init()
   if (isset($_GET['spbc_remote_call_token'], $_GET['spbc_remote_call_action'], $_GET['plugin_name']) && in_array($_GET['plugin_name'], array('antispam', 'anti-spam', 'apbct'))) {
     CleantalkFuncs::_cleantalk_apbct_remote_call__perform();
   }
+
   CleantalkFuncs::_cleantalk_apbct_cookies_set();
 
   drupal_add_js(drupal_get_path('module', 'cleantalk') . '/src/js/apbct-public.js');
@@ -259,10 +264,10 @@ function cleantalk_init()
       'scope' => 'footer',
       'weight' => 5,
       /*'cache' => FALSE,
-   * This not need here
-   * 'cache' option Used only when 'type' references a JavaScript file
-   * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_add_js/7.x
-   */
+       * This not need here
+       * 'cache' option Used only when 'type' references a JavaScript file
+       * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_add_js/7.x
+       */
       'every_page' => TRUE,
     )
   );

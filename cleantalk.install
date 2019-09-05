@@ -91,10 +91,11 @@ function cleantalk_install()
 
   db_drop_table('cleantalk_sessions');
     $cleantalk_sessions = array(
-    'description' => 'SpamFireWall logs.',
+    'description' => 'Alternative cookies table',
     'fields' => array(
       'id' => array(
-        'type' => 'serial',
+        'type' => 'varchar',
+        'length' => 64,
         'not null' => TRUE,
         'description' => 'id.'
       ),
@@ -107,7 +108,6 @@ function cleantalk_install()
       ),
     'value' => array(
         'type' => 'text',
-        'size' => 'small',
         'not null' => FALSE,
         'default' => NULL,
         'description' => 'value.'
@@ -120,7 +120,7 @@ function cleantalk_install()
         'description' => 'time().'
       )
     ),
-    'primary key' => array('id'),
+    'primary key' => array('id','name'),
   );
   db_create_table('cleantalk_sessions', $cleantalk_sessions);
 }
@@ -164,6 +164,8 @@ function cleantalk_uninstall() {
   variable_del('cleantalk_api_ip_license');
   variable_del('cleantalk_show_renew_banner');
   variable_del('cleantalk_add_search_noindex');
+  variable_del('cleantalk_set_cookies');
+  variable_del('cleantalk_alternative_cookies_session');
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
   db_drop_table('cleantalk_sfw_logs');
