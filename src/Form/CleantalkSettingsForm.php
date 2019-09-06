@@ -177,19 +177,19 @@ function cleantalk_settings_form($form, &$form_state) {
       '</span>',
   );
 
-  if( variable_get('cleantalk_set_cookies', 1) ) {
-    $cleantalk_alternative_cookies_session_option_disabled = false;
-  } else {
-    $cleantalk_alternative_cookies_session_option_disabled = true;
-  }
-
   $form['cleantalk_alternative_cookies_session'] = array(
     '#type' => 'checkbox',
-    '#disabled' => $cleantalk_alternative_cookies_session_option_disabled,
     '#title' => t('Use alternative mechanism for cookies'),
     '#default_value' => variable_get('cleantalk_alternative_cookies_session', 0),
     '#description' => t('Doesn\'t use cookie or PHP sessions. Collect data for all types of bots.'),
-  );  
+    '#states' => array(
+      // Only show this field when the value when checking comments is enabled
+      'invisible' => array(
+        ':input[name="cleantalk_set_cookies"]' => array('checked' => FALSE),
+      ),
+    ),
+  );
+
   $form['cleantalk_sfw'] = array(
     '#type' => 'checkbox',
     '#title' => t('Spam FireWall'),
