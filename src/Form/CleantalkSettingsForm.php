@@ -118,7 +118,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Fields exclusions'),
     '#default_value' => variable_get('cleantalk_fields_exclusions', ''),
-    '#description' => t('Exclude fields from spam check. List them separated by commas.'),
+    '#description' => t('Exclude fields from spam check. List them separated by commas. Works on forms except for registration and comment forms.'),
   );
 
   $form['cleantalk_exclusions']['cleantalk_roles_exclusions'] = array(
