@@ -281,7 +281,7 @@ class CleantalkFuncs
     );
     $fields_exclusions = explode(',', variable_get('cleantalk_fields_exclusions', ''));
     if ($fields_exclusions && is_array($fields_exclusions) && count($fields_exclusions) > 0)
-      array_merge($skip_fields_with_strings, $fields_exclusions);
+      $skip_fields_with_strings = array_merge($skip_fields_with_strings, $fields_exclusions);
     // Reset $message if we have a sign-up data
     $skip_message_post = array(
       'edd_action', // Easy Digital Downloads
