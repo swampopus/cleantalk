@@ -147,11 +147,11 @@ class CleantalkFuncs
    */
   static private function _apbct_alt_sessions__remove_old()
   {
-    if (rand(0, 1000) < APBCT_SEESION__CHANCE_TO_CLEAN) {
+    if (rand(0, 1000) < APBCT_SESSION__CHANCE_TO_CLEAN) {
 
       db_query("DELETE
       FROM {cleantalk_sessions}
-      WHERE last_update < NOW() - INTERVAL '. APBCT_SEESION__LIVE_TIME .' SECOND
+      WHERE last_update < NOW() - INTERVAL '. APBCT_SESSION__LIVE_TIME .' SECOND
       LIMIT 100000;");
 
     }
@@ -564,7 +564,7 @@ class CleantalkFuncs
     $ct_request->auth_key = $ct_authkey;
     $ct_request->agent = CLEANTALK_USER_AGENT;
     $ct_request->response_lang = $language->language;
-    $ct_request->js_on = (isset($_COOKIE['apbct_check_js']) && $_COOKIE['apbct_check_js'] == self::_cleantalk_get_checkjs_value()) ? 1 : 0;
+    $ct_request->js_on = (isset($_COOKIE['ct_check_js']) && $_COOKIE['ct_check_js'] == self::_cleantalk_get_checkjs_value()) ? 1 : 0;
     $ct_request->sender_info = drupal_json_encode(
       array(
         'cms_lang' => $language->language,
@@ -572,10 +572,10 @@ class CleantalkFuncs
         'page_url' => isset($_SERVER['SERVER_NAME'], $_SERVER['REQUEST_URI']) ? htmlspecialchars($_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI']) : null,
         'USER_AGENT' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null,
         'ct_options' => drupal_json_encode($ct_options),
-        'js_timezone' => (isset($_COOKIE['apbct_timezone']) ? $_COOKIE['apbct_timezone'] : ''),
-        'mouse_cursor_positions' => (isset($_COOKIE['apbct_pointer_data']) ? json_decode($_COOKIE['apbct_pointer_data']) : ''),
-        'key_press_timestamp' => (isset($_COOKIE['apbct_fkp_timestamp']) ? $_COOKIE['apbct_fkp_timestamp'] : ''),
-        'page_set_timestamp' => (isset($_COOKIE['apbct_ps_timestamp']) ? $_COOKIE['apbct_ps_timestamp'] : 0),
+        'js_timezone' => (isset($_COOKIE['ct_timezone']) ? $_COOKIE['ct_timezone'] : ''),
+        'mouse_cursor_positions' => (isset($_COOKIE['ct_pointer_data']) ? json_decode($_COOKIE['ct_pointer_data']) : ''),
+        'key_press_timestamp' => (isset($_COOKIE['ct_fkp_timestamp']) ? $_COOKIE['ct_fkp_timestamp'] : ''),
+        'page_set_timestamp' => (isset($_COOKIE['ct_ps_timestamp']) ? $_COOKIE['ct_ps_timestamp'] : 0),
         'REFFERRER_PREVIOUS' => self::_apbct_getcookie('apbct_prev_referer'),
         'cookies_enabled' => self::_cleantalk_apbct_cookies_test(),
         'form_validation' => ($form_errors && is_array($form_errors)) ? json_encode(array('validation_notice' => json_encode($form_errors), 'page_url' => $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'])) : null,

@@ -6,8 +6,8 @@ define("CLEANTALK_USER_AGENT", 'drupal-45');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 // Sessions
-define('APBCT_SEESION__LIVE_TIME', 86400*2);
-define('APBCT_SEESION__CHANCE_TO_CLEAN', 100);
+define('APBCT_SESSION__LIVE_TIME', 86400*2);
+define('APBCT_SESSION__CHANCE_TO_CLEAN', 100);
 
 /**
  * @file
@@ -258,7 +258,7 @@ function cleantalk_init()
 
   drupal_add_js(drupal_get_path('module', 'cleantalk') . '/src/js/apbct-public.js');
 
-  drupal_add_js('ctSetCookie("apbct_check_js", "' . CleantalkFuncs::_cleantalk_get_checkjs_value() . '", "0");',
+  drupal_add_js('ctSetCookie("ct_check_js", "' . CleantalkFuncs::_cleantalk_get_checkjs_value() . '", "0");',
     array(
       'type' => 'inline',
       'scope' => 'footer',

@@ -8,10 +8,10 @@ function ctSetCookie(c_name, value) {
 	document.cookie = c_name + "=" + encodeURIComponent(value) + "; path=/";
 }
 
-ctSetCookie("apbct_ps_timestamp", Math.floor(new Date().getTime()/1000));
-ctSetCookie("apbct_fkp_timestamp", "0");
-ctSetCookie("apbct_pointer_data", "0");
-ctSetCookie("apbct_timezone", d.getTimezoneOffset()/60*(-1));
+ctSetCookie("ct_ps_timestamp", Math.floor(new Date().getTime()/1000));
+ctSetCookie("ct_fkp_timestamp", "0");
+ctSetCookie("ct_pointer_data", "0");
+ctSetCookie("ct_timezone", d.getTimezoneOffset()/60*(-1));
 
 //Reading interval
 var ctMouseReadInterval = setInterval(function(){
@@ -21,7 +21,7 @@ var ctMouseReadInterval = setInterval(function(){
 //Writting interval
 var ctMouseWriteDataInterval = setInterval(function(){
 		var ctMouseDataToSend = ctMouseData.slice(0,-1).concat("]");
-		ctSetCookie("apbct_pointer_data", ctMouseDataToSend);
+		ctSetCookie("ct_pointer_data", ctMouseDataToSend);
 	}, 1200);
 
 //Stop observing function
@@ -44,7 +44,7 @@ var ctFunctionMouseMove = function output(event){
 		if(ctMouseDataCounter >= 100)
 			ctMouseStopData();
 	}
-}
+};
 
 //Stop key listening function
 function ctKeyStopStopListening(){
@@ -60,9 +60,9 @@ function ctKeyStopStopListening(){
 //Writing first key press timestamp
 var ctFunctionFirstKey = function output(event){
 	var KeyTimestamp = Math.floor(new Date().getTime()/1000);
-	ctSetCookie("apbct_fkp_timestamp", KeyTimestamp);
+	ctSetCookie("ct_fkp_timestamp", KeyTimestamp);
 	ctKeyStopStopListening();
-}
+};
 
 if(typeof window.addEventListener == "function"){
 	window.addEventListener("mousemove", ctFunctionMouseMove);
