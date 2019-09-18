@@ -519,7 +519,7 @@ class CleantalkFuncs
             foreach ($url_exclusion as $key => $value) {
 
               if( $check_type == 1 ) { // If RegExp
-                if( preg_match( '/' . $value . '/', $_SERVER['REQUEST_URI'] ) ) {
+                if( @preg_match( '/' . $value . '/', $_SERVER['REQUEST_URI'] ) ) {
                   $url_check = false;
                 }
               } else {
