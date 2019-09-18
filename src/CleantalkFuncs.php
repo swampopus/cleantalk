@@ -515,7 +515,18 @@ class CleantalkFuncs
         if (variable_get('cleantalk_url_exclusions', '')) {
           $url_exclusion = explode(',', variable_get('cleantalk_url_exclusions', ''));
           if ($url_exclusion && is_array($url_exclusion) && count($url_exclusion) > 0) {
+            $check_type = variable_get('cleantalk_url_exclusions_regexp', 0);
             foreach ($url_exclusion as $key => $value) {
+
+              if( $check_type == 1 ) { // If RegExp
+                if( preg_match( '/' . $value . '/', $_SERVER['REQUEST_URI'] ) ) {
+                  $url_check = false;
+                }
+              } else {
+                if( $_SERVER['REQUEST_URI'] === $value ) { // Simple string checking
+                  $url_check = false;
+                }
+              }
               if (strpos($value, 'node') !== false && strpos($_SERVER['REQUEST_URI'], 'q=comment/reply/') !== false) {
                 $get_node = array_values(array_slice(explode('/', $value), -1))[0];
                 $current_reply_id = array_values(array_slice(explode('/', $_SERVER['REQUEST_URI']), -1))[0];

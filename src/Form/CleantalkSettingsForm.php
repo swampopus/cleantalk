@@ -98,36 +98,68 @@ function cleantalk_settings_form($form, &$form_state) {
     '#title' => t('Exclusions'),
   );
 
-  $form['cleantalk_exclusions']['cleantalk_url_checking'] = array(
-    '#type' => 'textfield',
-    '#title' => t('URL checking'),
-    '#default_value' => variable_get('cleantalk_url_checking', 'all'),
-    '#description' => t('Enable spam check only for specific URLs. List them seperated by commas. Set \'all\' for checking all URLs.') . '<br /><span class="admin-disabled">' .
-      t('Note: Don\'t change this if you\'re unsure!') .
-    '</span>',
-  );
-
-  $form['cleantalk_exclusions']['cleantalk_url_exclusions'] = array(
-    '#type' => 'textfield',
+ // Container URL_EXCLUSIONS
+  $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset'] = array(
+    '#type' => 'fieldset',
     '#title' => t('URL exclusions'),
-    '#default_value' => variable_get('cleantalk_url_exclusions', ''),
     '#description' => t('Exclude urls from spam check. List them separated by commas.'),
   );
-
-  $form['cleantalk_exclusions']['cleantalk_fields_exclusions'] = array(
+  $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset']['cleantalk_url_exclusions_container_inline'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array(
+        'container-inline'
+      ),
+    ),
+  );
+  $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset']['cleantalk_url_exclusions_container_inline']['cleantalk_url_exclusions'] = array(
     '#type' => 'textfield',
-    '#title' => t('Fields exclusions'),
-    '#default_value' => variable_get('cleantalk_fields_exclusions', ''),
-    '#description' => t('Exclude fields from spam check. List them separated by commas. Works on forms except for registration and comment forms.'),
+    '#default_value' => variable_get('cleantalk_url_exclusions', ''),
+  );
+  $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset']['cleantalk_url_exclusions_container_inline']['cleantalk_url_exclusions_regexp'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('RegExp?'),
+    '#default_value' => variable_get('cleantalk_url_exclusions_regexp', 0),
   );
 
-  $form['cleantalk_exclusions']['cleantalk_roles_exclusions'] = array(
-    '#type' => 'select',
+  // Container FIELDS_EXCLUSIONS
+  $form['cleantalk_exclusions']['cleantalk_fields_exclusions_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Fields exclusions'),
+    '#description' => t('Exclude fields from spam check. List them separated by commas. Works on forms except for registration and comment forms.'),
+  );
+  $form['cleantalk_exclusions']['cleantalk_fields_exclusions_fieldset']['cleantalk_fields_exclusions_container_inline'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array(
+        'container-inline'
+      ),
+    ),
+  );
+  $form['cleantalk_exclusions']['cleantalk_fields_exclusions_fieldset']['cleantalk_fields_exclusions_container_inline']['cleantalk_fields_exclusions'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('cleantalk_fields_exclusions', ''),
+  );
+
+  // Container ROLES_EXCLUSIONS
+  $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset'] = array(
+    '#type' => 'fieldset',
     '#title' => t('Roles checking'),
+    '#description' => t('Select roles that you want to be checked.'),
+  );
+  $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset']['cleantalk_roles_exclusions_container_inline'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array(
+        'container-inline'
+      ),
+    ),
+  );
+  $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset']['cleantalk_roles_exclusions_container_inline']['cleantalk_roles_exclusions'] = array(
+    '#type' => 'select',
     '#options' => cleantalk_get_user_roles(),
     '#multiple' => true,
     '#default_value' => variable_get('cleantalk_roles_exclusions', array(1,2)),
-    '#description' => t('Select roles that you want to be checked.'),
   );
 
   $form['cleantalk_check_register'] = array(
