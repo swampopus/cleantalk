@@ -305,8 +305,7 @@ function cleantalk_regexp_validation($element, &$form_state, $form ) {
   if( $form_state['values']['cleantalk_url_exclusions_regexp'] ) {
 
     $errors = array();
-	$valid  = array();
-	
+
     if( ! empty( $element['#value'] ) ) {
       $exclusions = explode( ',', $element['#value'] );
       foreach ( $exclusions as $exclusion ){
@@ -314,18 +313,14 @@ function cleantalk_regexp_validation($element, &$form_state, $form ) {
         if ( ! empty( $sanitized_exclusion ) ) {
           if( ! apbct_is_regexp( $sanitized_exclusion ) ) {
             $errors[] = $sanitized_exclusion;
-			continue;
           }
-		  $valid[] = $sanitized_exclusion;
         }
       }
     }
 
-	$valid = implode(',', $valid);
-	
     if( ! empty($errors) ) {
       // Remove the variable (setting) from BD if is not valid
-      variable_set('cleantalk_url_exclusions', $valid);
+      variable_set('cleantalk_url_exclusions', '');
       // And trigger an error
       form_error($element, t('URL exclusions is not valid.') . ' <strong>' . implode( ', ', $errors ) . '<strong>');
     }
