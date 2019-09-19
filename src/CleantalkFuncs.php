@@ -282,6 +282,12 @@ class CleantalkFuncs
 
     if(variable_get('cleantalk_fields_exclusions')) {
       $fields_exclusions = explode(',', variable_get('cleantalk_fields_exclusions'));
+      foreach($fields_exclusions as &$fields_exclusion) {
+        if( preg_match('/\[*\]/', $fields_exclusion ) ) {
+          // I have to do this to support exclusions like 'submitted[name]'
+          $fields_exclusion = str_replace( array( '[', ']' ), array( '_', '' ), $fields_exclusion );
+        }
+      }
       if ($fields_exclusions && is_array($fields_exclusions) && count($fields_exclusions) > 0)
         $skip_fields_with_strings = array_merge($skip_fields_with_strings, $fields_exclusions);
     }
