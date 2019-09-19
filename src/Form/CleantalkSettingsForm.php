@@ -115,6 +115,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset']['cleantalk_url_exclusions_container_inline']['cleantalk_url_exclusions'] = array(
     '#type' => 'textfield',
     '#default_value' => variable_get('cleantalk_url_exclusions', ''),
+    '#element_validate' => array('cleantalk_regexp_validation'),
   );
   $form['cleantalk_exclusions']['cleantalk_url_exclusions_fieldset']['cleantalk_url_exclusions_container_inline']['cleantalk_url_exclusions_regexp'] = array(
     '#type' => 'checkbox',
@@ -288,4 +289,54 @@ function cleantalk_get_user_roles() {
     }
   }
   return $user_roles;
+}
+
+/**
+ * Validating the URL exclusion string
+ *
+ * @param $element
+ * @param $form_state
+ * @param $form
+ *
+ * @return 'form_error()' or nothing
+ */
+function cleantalk_regexp_validation($element, &$form_state, $form ) {
+
+  if( $form_state['values']['cleantalk_url_exclusions_regexp'] ) {
+
+    $errors = array();
+
+    if( ! empty( $element['#value'] ) ) {
+      $exclusions = explode( ',', $element['#value'] );
+      foreach ( $exclusions as $exclusion ){
+        $sanitized_exclusion = trim( $exclusion );
+        if ( ! empty( $sanitized_exclusion ) ) {
+          if( ! apbct_is_regexp( $sanitized_exclusion ) ) {
+            $errors[] = $sanitized_exclusion;
+          }
+        }
+      }
+    }
+
+    if( ! empty($errors) ) {
+      // Remove the variable (setting) from BD if is not valid
+      variable_set('cleantalk_url_exclusions', '');
+      // And trigger an error
+      form_error($element, t('URL exclusions is not valid.') . ' <strong>' . implode( ', ', $errors ) . '<strong>');
+    }
+
+  }
+
+}
+
+/**
+ * Is this valid regexp
+ *
+ * @param $regexp
+ * @return bool
+ */
+function apbct_is_regexp($regexp ) {
+
+  return @preg_match( '/' . $regexp . '/', null ) !== false;
+
 }
