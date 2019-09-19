@@ -102,18 +102,10 @@ function cleantalk_validate_webform(&$form, &$form_state)
     $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
     $spam_check['type'] = 'webform';
-    if (empty($form_state['values']['submitted']['e_mail']))
-      $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
-    else $spam_check['sender_email'] = $form_state['values']['submitted']['e_mail'];
-    if (empty($form_state['values']['submitted']['name']))
-      $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname'] ? $ct_temp_msg_data['nickname'] : '');
-    else $spam_check['sender_nickname'] = $form_state['values']['submitted']['name'];
-    if (empty($form_state['values']['submitted']['subject']))
-      $spam_check['message_title'] = ($ct_temp_msg_data['subject'] ? $ct_temp_msg_data['subject'] : '');
-    else $spam_check['message_title'] = $form_state['values']['submitted']['subject'];
-    if (empty($form_state['values']['submitted']['message']))
-      $spam_check['message_body'] = ($ct_temp_msg_data['message'] ? $ct_temp_msg_data['message'] : '');
-    else $spam_check['message_body'] = $form_state['values']['submitted']['message'];
+    $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
+    $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname'] ? $ct_temp_msg_data['nickname'] : '');
+    $spam_check['message_title'] = ($ct_temp_msg_data['subject'] ? $ct_temp_msg_data['subject'] : '');
+    $spam_check['message_body'] = ($ct_temp_msg_data['message'] ? $ct_temp_msg_data['message'] : '');
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
