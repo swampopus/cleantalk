@@ -360,7 +360,7 @@ class CleantalkFuncs
             elseif (count($match_nickname) > 1)
               $nickname['nick'] = $value;
             else
-              $message[$prev_name . $key] = $value;
+              $nickname[$prev_name . $key] = $value;
 
             // Subject
           } elseif ($subject === null && preg_match("/subject/i", $key)) {
