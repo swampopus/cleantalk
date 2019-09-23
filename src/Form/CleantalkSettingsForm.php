@@ -274,6 +274,11 @@ function cleantalk_settings_form_validate($form, &$form_state) {
         variable_set('cleantalk_sfw_last_logs_sent', time());
         variable_set('cleantalk_sfw_last_updated', time());        
       }
+      // Turns off alternative cookies setting if cookies are disabled
+      if( 0 == $form_state['values']['cleantalk_set_cookies'] )
+      {
+        $form_state['values']['cleantalk_alternative_cookies_session'] = 0;
+      }
     }
     else
       form_set_error('cleantalk_authkey', t('Access key is not valid.'));
