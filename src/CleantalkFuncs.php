@@ -517,7 +517,7 @@ class CleantalkFuncs
               $url_check = false;
             }
           } else {
-            if( $_SERVER['REQUEST_URI'] === $value ) { // Simple string checking
+            if( $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'] === $value ) { // Simple string checking
               $url_check = false;
             }
           }
