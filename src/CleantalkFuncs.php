@@ -176,7 +176,6 @@ class CleantalkFuncs
    */
   static public function _cleantalk_apbct_cookies_test()
   {
-    // If Cookies are disabled by settings
     if (variable_get('cleantalk_alternative_cookies_session', 0)) {
       return 1;
     }
