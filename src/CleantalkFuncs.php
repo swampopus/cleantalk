@@ -177,14 +177,14 @@ class CleantalkFuncs
   static public function _cleantalk_apbct_cookies_test()
   {
     // If Cookies are disabled by settings
-    if (!variable_get('cleantalk_set_cookies', 1)) {
-      return 0;
+    if (variable_get('cleantalk_alternative_cookies_session', 0)) {
+      return 1;
     }
 
     $cookie_test = json_decode(stripslashes(self::_apbct_getcookie('apbct_cookies_test')), true);
 
     if (is_null($cookie_test)) {
-      return 0;
+      return null;
     }
 
     $check_string = trim(variable_get('cleantalk_authkey', ''));
