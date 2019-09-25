@@ -555,6 +555,12 @@ class CleantalkFuncs
       'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
       'cleantalk_check_forum_topics' => variable_get('cleantalk_check_forum_topics', ''),
       'cleantalk_check_ccf' => variable_get('cleantalk_check_ccf', ''),
+      'cleantalk_check_search_form' => variable_get('cleantalk_check_search_form', 1),
+      'cleantalk_add_search_noindex' => variable_get('cleantalk_add_search_noindex', 0),
+      'cleantalk_url_exclusions' => variable_get('cleantalk_url_exclusions', ''),
+      'cleantalk_url_exclusions_regexp' => variable_get('cleantalk_url_exclusions_regexp', 0),
+      'cleantalk_fields_exclusions' => variable_get('cleantalk_fields_exclusions', ''),
+      'cleantalk_roles_exclusions' => implode( ',', self::cleantalk_get_user_roles()),
       'cleantalk_set_cookies' => variable_get('cleantalk_set_cookies', 1),
       'cleantalk_alternative_cookies_session' => variable_get('cleantalk_alternative_cookies_session', 0),
       'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
@@ -591,6 +597,7 @@ class CleantalkFuncs
     );
     $ct_request->sender_email = isset($spam_check['sender_email']) ? $spam_check['sender_email'] : '';
     $ct_request->sender_nickname = isset($spam_check['sender_nickname']) ? $spam_check['sender_nickname'] : '';
+    $ct_request->sender_user_role = implode( ',', $user->roles);
     $ct_request->sender_ip = CleantalkHelper::ip_get(array('real'), false);
     $ct_request->x_forwarded_for = CleantalkHelper::ip_get(array('x_forwarded_for'), false);
     $ct_request->x_real_ip = CleantalkHelper::ip_get(array('x_real_ip'), false);
@@ -797,6 +804,17 @@ class CleantalkFuncs
     }
 
     return FALSE;
+  }
+
+  public static function cleantalk_get_user_roles() {
+    $result = db_select('role', 'r')->fields('r', array('name'))->execute();
+    $user_roles = array();
+    while ($role = $result->fetchAssoc()) {
+      if (isset($role['name'])) {
+        $user_roles[] = $role['name'];
+      }
+    }
+    return $user_roles;
   }
 
   /**

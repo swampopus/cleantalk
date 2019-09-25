@@ -158,7 +158,7 @@ function cleantalk_settings_form($form, &$form_state) {
   );
   $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset']['cleantalk_roles_exclusions_container_inline']['cleantalk_roles_exclusions'] = array(
     '#type' => 'select',
-    '#options' => cleantalk_get_user_roles(),
+    '#options' => CleantalkFuncs::cleantalk_get_user_roles(),
     '#multiple' => true,
     '#default_value' => variable_get('cleantalk_roles_exclusions', array(1,2)),
   );
@@ -283,17 +283,6 @@ function cleantalk_settings_form_validate($form, &$form_state) {
     else
       form_set_error('cleantalk_authkey', t('Access key is not valid.'));
   }
-}
-
-function cleantalk_get_user_roles() {
-  $result = db_select('role', 'r')->fields('r', array('name'))->execute();
-  $user_roles = array();
-  while ($role = $result->fetchAssoc()) {
-    if (isset($role['name'])) {
-      $user_roles[] = $role['name'];
-    }
-  }
-  return $user_roles;
 }
 
 /**
