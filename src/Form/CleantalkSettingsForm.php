@@ -160,7 +160,7 @@ function cleantalk_settings_form($form, &$form_state) {
     '#type' => 'select',
     '#options' => CleantalkFuncs::cleantalk_get_user_roles(),
     '#multiple' => true,
-    '#default_value' => variable_get('cleantalk_roles_exclusions', array(1,2)),
+    '#default_value' => variable_get('cleantalk_roles_exclusions',  CleantalkFuncs::cleantalk_get_user_roles_default()),
   );
 
   $form['cleantalk_check_register'] = array(
