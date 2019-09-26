@@ -340,19 +340,15 @@ class CleantalkFuncs
           unset($needle);
 
           // Removes whitespaces
-          $value = trim($value);
+          $value = urldecode( trim( strip_shortcodes( $value ) ) ); // Fully cleaned message
+          $value_for_email = trim( strip_shortcodes( $value ) );    // Removes shortcodes to do better spam filtration on server side.
 
           // Email
-          if (!$email && preg_match("/^\S+@\S+\.\S+$/", $value)){
-            $email = $value;
-            continue;
-          } else {
-            // Decodes URL-encoded data to string exluding emails.
-            $value = urldecode($value);
-          }
+          if ( ! $email && preg_match( "/^\S+@\S+\.\S+$/", $value_for_email ) ) {
+            $email = $value_for_email;
 
-          // Names
-          if (preg_match("/name/i", $key)) {
+            // Names
+          } elseif (preg_match("/name/i", $key)) {
 
             preg_match("/((name.?)?(your|first|for)(.?name)?)$/", $key, $match_forename);
             preg_match("/((name.?)?(last|family|second|sur)(.?name)?)$/", $key, $match_surname);
@@ -560,7 +556,7 @@ class CleantalkFuncs
       'cleantalk_url_exclusions' => variable_get('cleantalk_url_exclusions', ''),
       'cleantalk_url_exclusions_regexp' => variable_get('cleantalk_url_exclusions_regexp', 0),
       'cleantalk_fields_exclusions' => variable_get('cleantalk_fields_exclusions', ''),
-      'cleantalk_roles_exclusions' => implode( ',', self::cleantalk_get_user_roles()),
+      'cleantalk_roles_exclusions' => implode( ',', variable_get('cleantalk_roles_exclusions')),
       'cleantalk_set_cookies' => variable_get('cleantalk_set_cookies', 1),
       'cleantalk_alternative_cookies_session' => variable_get('cleantalk_alternative_cookies_session', 0),
       'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
