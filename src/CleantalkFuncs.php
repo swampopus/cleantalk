@@ -340,8 +340,8 @@ class CleantalkFuncs
           unset($needle);
 
           // Removes whitespaces
-          $value = urldecode( trim( strip_shortcodes( $value ) ) ); // Fully cleaned message
-          $value_for_email = trim( strip_shortcodes( $value ) );    // Removes shortcodes to do better spam filtration on server side.
+          $value = urldecode( trim( $value ) ); // Fully cleaned message
+          $value_for_email = trim( $value );    // Removes shortcodes to do better spam filtration on server side.
 
           // Email
           if ( ! $email && preg_match( "/^\S+@\S+\.\S+$/", $value_for_email ) ) {
