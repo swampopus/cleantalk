@@ -151,7 +151,7 @@ class CleantalkFuncs
 
       db_query("DELETE
       FROM {cleantalk_sessions}
-      WHERE last_update < NOW() - INTERVAL '. APBCT_SESSION__LIVE_TIME .' SECOND
+      WHERE last_update < NOW() - INTERVAL ". APBCT_SESSION__LIVE_TIME ." SECOND
       LIMIT 100000;");
 
     }
