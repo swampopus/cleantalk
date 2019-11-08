@@ -556,7 +556,7 @@ class CleantalkFuncs
       'cleantalk_url_exclusions' => variable_get('cleantalk_url_exclusions', ''),
       'cleantalk_url_exclusions_regexp' => variable_get('cleantalk_url_exclusions_regexp', 0),
       'cleantalk_fields_exclusions' => variable_get('cleantalk_fields_exclusions', ''),
-      'cleantalk_roles_exclusions' => implode( ',', variable_get('cleantalk_roles_exclusions')),
+      'cleantalk_roles_exclusions' => variable_get('cleantalk_roles_exclusions') ? implode( ',', variable_get('cleantalk_roles_exclusions')) : '',
       'cleantalk_set_cookies' => variable_get('cleantalk_set_cookies', 1),
       'cleantalk_alternative_cookies_session' => variable_get('cleantalk_alternative_cookies_session', 0),
       'cleantalk_sfw' => variable_get('cleantalk_sfw', ''),
