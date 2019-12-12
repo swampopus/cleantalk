@@ -222,7 +222,7 @@ class CleantalkSFW extends CleantalkHelper {
 			$sfw_die_page = file_get_contents(dirname(__FILE__)."/sfw_die_page.html");
 		}else{
 			print "IP BLACKLISTED";
-			drupal_exit();
+			die();
 		}
 		
 		// Service info
@@ -243,7 +243,7 @@ class CleantalkSFW extends CleantalkHelper {
 		}
 
 		print $sfw_die_page;
-		drupal_exit();
+		die();
 		
 	}
 }

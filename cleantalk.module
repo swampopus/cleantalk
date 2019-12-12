@@ -229,6 +229,52 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
       $form['#validate'][] = 'cleantalk_validate_forum';
   }
 }
+/**
+ * Implements hook_boot()
+ */
+
+function cleantalk_boot() {
+  $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
+  
+  if (variable_get('cleantalk_sfw', 0)) {
+    $sfw = new CleantalkSFW();
+
+    $ct_sfw_last_logs_sent = variable_get('cleantalk_sfw_last_logs_sent', null);
+    if ($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600)) {
+      variable_set('cleantalk_sfw_last_logs_sent', time());
+      $sfw->send_logs($ct_authkey);
+    }
+
+    $ct_sfw_last_updated = variable_get('cleantalk_sfw_last_updated', null);
+    if ($ct_sfw_last_updated && (time() - $ct_sfw_last_updated > 86400)) {
+      variable_set('cleantalk_sfw_last_updated', time());
+      $sfw->sfw_update($ct_authkey);
+    }
+
+    $is_sfw_check = true;
+
+    $sfw->ip_array = (array)CleantalkSFW::ip_get(array('real'), true);
+
+    foreach ($sfw->ip_array as $key => $value) {
+      if (isset($_COOKIE['apbct_sfw_pass_key']) && $_COOKIE['apbct_sfw_pass_key'] == md5($value . $ct_authkey)) {
+        $is_sfw_check = false;
+        if (isset($_COOKIE['apbct_sfw_passed'])) {
+          @setcookie('apbct_sfw_passed'); //Deleting cookie
+          $sfw->sfw_update_logs($value, 'passed');
+        }
+      }
+    }
+    unset($key, $value);
+
+    if ($is_sfw_check) {
+      $sfw->check_ip();
+      if ($sfw->result) {
+        $sfw->sfw_update_logs($sfw->blocked_ip, 'blocked');
+        $sfw->sfw_die($ct_authkey);
+      }
+    }
+  }
+}
 
 /**
  * Implements hook_init()
@@ -266,44 +312,7 @@ function cleantalk_init()
 
   $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
   if ($ct_authkey != '') {
-    if (variable_get('cleantalk_sfw', 0)) {
-      $sfw = new CleantalkSFW();
 
-      $ct_sfw_last_logs_sent = variable_get('cleantalk_sfw_last_logs_sent', null);
-      if ($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600)) {
-        variable_set('cleantalk_sfw_last_logs_sent', time());
-        $sfw->send_logs($ct_authkey);
-      }
-
-      $ct_sfw_last_updated = variable_get('cleantalk_sfw_last_updated', null);
-      if ($ct_sfw_last_updated && (time() - $ct_sfw_last_updated > 86400)) {
-        variable_set('cleantalk_sfw_last_updated', time());
-        $sfw->sfw_update($ct_authkey);
-      }
-
-      $is_sfw_check = true;
-
-      $sfw->ip_array = (array)CleantalkSFW::ip_get(array('real'), true);
-
-      foreach ($sfw->ip_array as $key => $value) {
-        if (isset($_COOKIE['apbct_sfw_pass_key']) && $_COOKIE['apbct_sfw_pass_key'] == md5($value . $ct_authkey)) {
-          $is_sfw_check = false;
-          if (isset($_COOKIE['apbct_sfw_passed'])) {
-            @setcookie('apbct_sfw_passed'); //Deleting cookie
-            $sfw->sfw_update_logs($value, 'passed');
-          }
-        }
-      }
-      unset($key, $value);
-
-      if ($is_sfw_check) {
-        $sfw->check_ip();
-        if ($sfw->result) {
-          $sfw->sfw_update_logs($sfw->blocked_ip, 'blocked');
-          $sfw->sfw_die($ct_authkey);
-        }
-      }
-    }
     if (sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && variable_get('cleantalk_check_ccf', 0) && strpos($_SERVER['REQUEST_URI'], 'cron.php') === false && strpos($_SERVER['HTTP_USER_AGENT'], 'libwww-perl') === false) //Custom Contact forms
     {
       $spam_check = array();
