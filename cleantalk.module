@@ -2,7 +2,7 @@
 require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
-define("CLEANTALK_USER_AGENT", 'drupal-45');
+define("CLEANTALK_USER_AGENT", 'drupal-46');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 // Sessions
@@ -235,7 +235,7 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
 
 function cleantalk_boot() {
   $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
-  
+
   if (variable_get('cleantalk_sfw', 0)) {
     $sfw = new CleantalkSFW();
 
