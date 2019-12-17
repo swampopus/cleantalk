@@ -324,7 +324,7 @@ class CleantalkFuncs
 
           // Skipping fields names with strings from (array)skip_fields_with_strings
           foreach ($skip_fields_with_strings as $needle) {
-            if (preg_match("/" . $needle . "/", $prev_name . $key) == 1) {
+            if (preg_match("/^" . $needle . "$/", $prev_name . $key) == 1) {
               continue(2);
             }
           }
