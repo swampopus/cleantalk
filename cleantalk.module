@@ -217,7 +217,7 @@ function cleantalk_menu()
  */
 function _cleantalk_form_alter(&$form, &$form_state, $form_id)
 {
-  if (user_access('administer modules') || path_is_admin(current_path()) || $form_id == 'search_form' || $form_id == 'user_login_form' || $form_id == 'search_block_form' || $form_id == 'user_login_block')
+  if (user_access('administer modules') || ( path_is_admin(current_path()) && $form_id !== 'forum_node_form' ) || $form_id == 'search_form' || $form_id == 'user_login_form' || $form_id == 'search_block_form' || $form_id == 'user_login_block')
     return;
 
   if (variable_get('cleantalk_link', 0) != 0) {
