@@ -146,7 +146,7 @@ function cleantalk_settings_form($form, &$form_state) {
   $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset'] = array(
     '#type' => 'fieldset',
     '#title' => t('Roles checking'),
-    '#description' => t('Select roles that you want to be checked.'),
+    '#description' => t('Roles which bypass spam test. You can select multiple roles.'),
   );
   $form['cleantalk_exclusions']['cleantalk_roles_exclusions_fieldset']['cleantalk_roles_exclusions_container_inline'] = array(
     '#type' => 'container',

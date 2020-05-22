@@ -478,7 +478,7 @@ class CleantalkFuncs
 
       foreach ($roles as $role_id) {
         if (self::_cleantalk_user_has_role_id($role_id)) {
-          $set_check = true;
+          $set_check = false;
         }
       }
 
@@ -811,7 +811,7 @@ class CleantalkFuncs
   public static function cleantalk_get_user_roles_default() {
     $roles = self::cleantalk_get_user_roles();
     foreach( $roles as $role_id => $role_name ) {
-      if(strpos('administrator', $role_name) !== false) {
+      if(strpos('administrator', $role_name) === false) {
         unset( $roles[$role_id] );
       }
     }
