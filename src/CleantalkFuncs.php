@@ -598,6 +598,9 @@ class CleantalkFuncs
     $ct_request->x_forwarded_for = CleantalkHelper::ip_get(array('x_forwarded_for'), false);
     $ct_request->x_real_ip = CleantalkHelper::ip_get(array('x_real_ip'), false);
     $ct_request->submit_time = self::_cleantalk_get_submit_time();
+    if ($spam_check['type'] == 'custom_contact_form' && isset($_SERVER['HTTP_REFERER']) && htmlspecialchars($_SERVER['HTTP_REFERER']) === 'https://www.google.com/') {
+      $spam_check['type'] = 'site_search_drupal7';
+    }
 
     switch ($spam_check['type']) {
       case 'comment':
