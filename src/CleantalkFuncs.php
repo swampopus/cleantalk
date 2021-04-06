@@ -474,7 +474,7 @@ class CleantalkFuncs
 
     if ($roles) {
 
-      $set_check = false;
+      $set_check = true;
 
       foreach ($roles as $role_id) {
         if (self::_cleantalk_user_has_role_id($role_id)) {
