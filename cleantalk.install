@@ -243,7 +243,7 @@ function cleantalk_update_7301(&$sandbox = NULL){
   
   return '* New table for SpamFireWall logs added.';
 }
-function cleantalk_update_7050 (&$sandbox = NULL) {
+function cleantalk_update_70410 (&$sandbox = NULL) {
   $roles = user_roles();
   asort($roles);
   foreach( $roles as $role_id => $role_name ) {
