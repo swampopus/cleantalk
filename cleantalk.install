@@ -243,3 +243,14 @@ function cleantalk_update_7301(&$sandbox = NULL){
   
   return '* New table for SpamFireWall logs added.';
 }
+function cleantalk_update_7049 {
+  $roles = user_roles();
+  asort($roles);
+  foreach( $roles as $role_id => $role_name ) {
+    if(strpos('administrator', $role_name) === false) {
+      unset( $roles[$role_id] );
+    }
+  }
+  $default_roles = array_keys($roles);
+  variable_set('cleantalk_roles_exclusions', $default_roles);
+}
