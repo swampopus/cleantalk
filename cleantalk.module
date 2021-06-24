@@ -43,6 +43,28 @@ function cleantalk_validate_register(&$form, &$form_state)
 }
 
 /**
+ * Cleantalk newsletter validation function.
+ */
+function cleantalk_validate_newsletter(&$form, &$form_state)
+{
+  global $user;
+
+  if (CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+    $spam_check = array();
+    $spam_check['type'] = 'comment';
+    $spam_check['sender_email'] = !empty($form_state['values']['email']) ? $form_state['values']['email'] : '';
+    $spam_check['sender_nickname'] = !empty($form_state['values']['firstname']) && !empty($form_state['values']['lastname']) ? $form_state['values']['firstname'] . $form_state['values']['lastname'] : '';
+    $spam_check['message_title'] = '';
+    $spam_check['message_body'] = '';
+
+    $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
+
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+      form_set_error('email', $spam_result['ct_result_comment']);
+  }
+}
+
+/**
  * Cleantalk comment validation function.
  */
 function cleantalk_validate_comment(&$form, &$form_state)
@@ -239,6 +261,9 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
       $form['#validate'][] = 'cleantalk_validate_webform';
     if (preg_match('|forum(.*?)_form|', $form_id))
       $form['#validate'][] = 'cleantalk_validate_forum';
+    if (preg_match('|newsletter_(.*?)_form|', $form_id)) {
+      $form['#validate'][] = 'cleantalk_validate_newsletter';
+    }
   }
 }
 /**
