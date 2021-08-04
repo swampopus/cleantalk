@@ -644,8 +644,10 @@ class CleantalkHelper
 				$key_parts = explode('_', $server_key);
 				if(count($key_parts) > 0 and strlen($server_key) > 2){
 					foreach($key_parts as $part_index => $part){
-						$key_parts[$part_index] = mb_strtolower($part);
-						$key_parts[$part_index][0] = strtoupper($key_parts[$part_index][0]);					
+						if (!empty($part)) {
+							$key_parts[$part_index] = mb_strtolower($part);
+							$key_parts[$part_index][0] = strtoupper($key_parts[$part_index][0]);
+						}
 					}
 					$server_key = implode('-', $key_parts);
 				}
