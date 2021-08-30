@@ -362,7 +362,7 @@ function cleantalk_init()
       $spam_check['message_title'] = ($ct_temp_msg_data['subject'] ? $ct_temp_msg_data['subject'] : '');
       $spam_check['message_body'] = ($ct_temp_msg_data['message'] ? $ct_temp_msg_data['message'] : '');
 
-      if ($spam_check['sender_email'] != '') {
+      if ($spam_check['sender_email'] != '' && (!empty($spam_check['message_title']) || !empty($spam_check['message_body']))) {
         $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
 
         if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
