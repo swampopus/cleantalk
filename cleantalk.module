@@ -253,7 +253,7 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
   if ($form_id == 'user_register_form')
     $form['#validate'][] = 'cleantalk_validate_register';
   else {
-    if (preg_match('|comment(.*?)_form|', $form_id))
+    if (preg_match('|comment(.*?)[_-]form|', $form_id))
       $form['#validate'][] = 'cleantalk_validate_comment';
     if (preg_match('|contact(.*?)_form|', $form_id))
       $form['#validate'][] = 'cleantalk_validate_contact_message';
