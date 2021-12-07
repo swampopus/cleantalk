@@ -554,6 +554,7 @@ class CleantalkFuncs
       'cleantalk_check_webforms' => variable_get('cleantalk_check_webforms', ''),
       'cleantalk_check_contact_forms' => variable_get('cleantalk_check_contact_forms', ''),
       'cleantalk_check_forum_topics' => variable_get('cleantalk_check_forum_topics', ''),
+      'cleantalk_check_added_content' => variable_get('cleantalk_check_added_content', ''),
       'cleantalk_check_ccf' => variable_get('cleantalk_check_ccf', ''),
       'cleantalk_check_search_form' => variable_get('cleantalk_check_search_form', 1),
       'cleantalk_add_search_noindex' => variable_get('cleantalk_add_search_noindex', 0),

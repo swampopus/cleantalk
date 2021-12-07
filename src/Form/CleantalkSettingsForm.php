@@ -189,7 +189,14 @@ function cleantalk_settings_form($form, &$form_state) {
     '#title' => t('Check forum topics'),
     '#default_value' => variable_get('cleantalk_check_forum_topics', 0),
     '#description' => t('Enabling this option will allow you to check all forum topics on your website.'),
-  );  
+  );
+
+  $form['cleantalk_check_added_content'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Check added content'),
+      '#default_value' => variable_get('cleantalk_check_added_content', 0),
+      '#description' => t('Enabling this option will allow you to check all added content (pages, articles, etc) by non-admin users on your website.'),
+    );
 
   $form['cleantalk_check_ccf'] = array(
     '#type' => 'checkbox',
