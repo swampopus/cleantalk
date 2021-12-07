@@ -492,7 +492,7 @@ class CleantalkFuncs
     }
 
     // Don't check reged user with >= 'cleantalk_check_comments_min_approved' approved msgs.
-    if ($user->uid > 0 && module_exists('comment')) {
+    if ($user->uid > 0 && module_exists('comment') && variable_get('cleantalk_check_comments_min_approved', 3)) {
       $result = db_query(
         'SELECT count(*) AS count FROM {comment} WHERE uid=:uid AND status=1',
         array(':uid' => $user->uid)
