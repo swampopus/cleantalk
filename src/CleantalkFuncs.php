@@ -467,8 +467,12 @@ class CleantalkFuncs
     if ($cleantalk_executed)
       return;
 
-    if (user_access('administer modules') && path_is_admin(current_path()))
+    if (
+      user_access('administer modules') &&
+      ( path_is_admin(current_path()) && ! variable_get('cleantalk_check_added_content', 0) )
+    ) {
       return;
+    }
 
     $roles = variable_get('cleantalk_roles_exclusions');
 
