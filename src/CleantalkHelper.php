@@ -194,11 +194,11 @@ class CleantalkHelper
 		// Explode by octets/hextets from IP and Net
 		$net_ip_xtets = explode($ip_type == 'v4' ? '.' : ':', $net_ip);
 		$ip_xtets     = explode($ip_type == 'v4' ? '.' : ':', $ip);
-		
-		// Standartizing. Getting current octets/hextets. Adding leading zeros. 
-		$net_xtet = str_pad(decbin($ip_type == 'v4' ? $net_ip_xtets[$xtet_count]  : hexdec($net_ip_xtets[$xtet_count])), $xtet_base, 0, STR_PAD_LEFT);
-		$ip_xtet  = str_pad(decbin($ip_type == 'v4' ? $ip_xtets[$xtet_count]      : hexdec($ip_xtets[$xtet_count])),     $xtet_base, 0, STR_PAD_LEFT);
-		
+
+		// Standartizing. Getting current octets/hextets. Adding leading zeros.
+		$net_xtet = str_pad(decbin($ip_type == 'v4' ? $net_ip_xtets[$xtet_count]  : @hexdec($net_ip_xtets[$xtet_count])), $xtet_base, 0, STR_PAD_LEFT);
+		$ip_xtet  = str_pad(decbin($ip_type == 'v4' ? $ip_xtets[$xtet_count]      : @hexdec($ip_xtets[$xtet_count])),     $xtet_base, 0, STR_PAD_LEFT);
+
 		// Comparing bit by bit
 		for($i = 0, $result = true; $mask != 0; $mask--, $i++ ){
 			if($ip_xtet[$i] != $net_xtet[$i]){
