@@ -314,6 +314,9 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
     if (preg_match('|node_form$|', $form_id)) {
       $form['#validate'][] = 'cleantalk_validate_node';
     }
+    if (preg_match('|email_mail_page(.*?)form|', $form_id)) {
+      $form['submit']['#validate'] = array('cleantalk_validate_contact_message');
+    }
   }
 }
 /**
