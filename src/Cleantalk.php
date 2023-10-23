@@ -195,7 +195,11 @@ class Cleantalk
      * @param type string
      * @return string
      */
-    private function compressData($data = null){
+    private function compressData($data = ''){
+
+        if (empty($data)) {
+            return '';
+        }
 
         if (strlen($data) > $this->dataMaxSise && function_exists('gzencode') && function_exists('base64_encode')){
 
@@ -659,9 +663,11 @@ class Cleantalk
     * @return string
     */
     public function stringToUTF8($str, $data_codepage = null){
+        if (empty($str)) {
+            return '';
+        }
         if (!preg_match('//u', $str) && function_exists('mb_detect_encoding') && function_exists('mb_convert_encoding'))
         {
-
             if ($data_codepage !== null)
                 return mb_convert_encoding($str, 'UTF-8', $data_codepage);
 
