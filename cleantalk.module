@@ -2,7 +2,7 @@
 require_once(dirname(__FILE__) . '/src/CleantalkSFW.php');
 require_once(dirname(__FILE__) . '/src/CleantalkFuncs.php');
 
-define("CLEANTALK_USER_AGENT", 'drupal-60');
+define("CLEANTALK_USER_AGENT", 'backdrop-60');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 // Sessions
@@ -287,7 +287,7 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
   if (variable_get('cleantalk_link', 0) != 0) {
     $form['terms_of_use'] = array(
       '#type' => 'item',
-      '#markup' => t("<a href='https://cleantalk.org/drupal-anti-spam-module-wo-captcha'>Drupal spam</a> blocked by CleanTalk."),
+      '#markup' => t("<a href='https://cleantalk.org'>Spam</a> blocked by CleanTalk."),
       '#required' => FALSE,
     );
   }
@@ -446,7 +446,7 @@ function cleantalk_init()
 
         if (count($get_query) > 2) {
           $search_word = $get_query[2];
-          $spam_check['type'] = 'site_search_drupal7';
+          $spam_check['type'] = 'site_search_backdrop1';
 
           $spam_check['sender_email'] = !empty($user->mail) ? $user->mail : '';
           $spam_check['sender_nickname'] = !empty($user->name) ? $user->name : '';
