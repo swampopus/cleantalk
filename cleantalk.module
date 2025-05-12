@@ -6,7 +6,7 @@ define("CLEANTALK_USER_AGENT", 'backdrop-60');
 define("APBCT_REMOTE_CALL_SLEEP", 10);
 
 // Sessions
-define('APBCT_SESSION__LIVE_TIME', 86400*2);
+define('APBCT_SESSION__LIVE_TIME', 86400 * 2);
 define('APBCT_SESSION__CHANCE_TO_CLEAN', 100);
 
 /**
@@ -15,19 +15,28 @@ define('APBCT_SESSION__CHANCE_TO_CLEAN', 100);
  */
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter().
+ * Implements hook_form_BASE_FORM_ID_alter().().
  */
-function cleantalk_form_alter(&$form, &$form_state, $form_id)
-{
+function cleantalk_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_config_info().
+ */
+function cleantalk_config_info() {
+  $prefixes['cleantalk.settings'] = array(
+    'label' => t('Anti-Spam by CleanTalk settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
 }
 
 /**
  * Cleantalk registration validation function.
  */
-function cleantalk_validate_register(&$form, &$form_state)
-{
-  if (variable_get('cleantalk_check_register', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+function cleantalk_validate_register(&$form, &$form_state) {
+  if (config_get('cleantalk.settings', 'cleantalk_check_register') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
 
     $spam_check['type'] = 'register';
@@ -37,16 +46,16 @@ function cleantalk_validate_register(&$form, &$form_state)
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('mail', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
  * Cleantalk newsletter validation function.
  */
-function cleantalk_validate_newsletter(&$form, &$form_state)
-{
+function cleantalk_validate_newsletter(&$form, &$form_state) {
   global $user;
 
   if (CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
@@ -59,31 +68,34 @@ function cleantalk_validate_newsletter(&$form, &$form_state)
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('email', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
  * Cleantalk comment validation function.
  */
-function cleantalk_validate_comment(&$form, &$form_state)
-{
+function cleantalk_validate_comment(&$form, &$form_state) {
+  $config = config('cleantalk.settings');
   global $user;
 
-  if (variable_get('cleantalk_check_comments', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+  if ($config->get('cleantalk_check_comments') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
 
     // Fill parameters array for usual comment
     $spam_check['type'] = 'comment';
     $comment_lang = array_key_exists('language', $form_state['values']) ? $form_state['values']['language'] : LANGUAGE_NONE;
-    if (isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) && isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) && isset($form_state['values']['comment_body'][$comment_lang][0]))
+    if (isset($form_state['values']['comment_body']) && is_array($form_state['values']['comment_body']) && isset($form_state['values']['comment_body'][$comment_lang]) && is_array($form_state['values']['comment_body'][$comment_lang]) && isset($form_state['values']['comment_body'][$comment_lang][0])) {
       $comment_body = $form_state['values']['comment_body'][$comment_lang][0];
+    }
 
     // Values below can be empty, we'll check as comment because of $base_form_id
-    if( isset( $user->mail ) ) {
+    if ( isset( $user->mail ) ) {
       $spam_check['sender_email'] = $user->mail;
-    } else {
+    }
+    else {
       $spam_check['sender_email'] = !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '';
     }
     $spam_check['sender_nickname'] = !empty($form_state['values']['name']) ? $form_state['values']['name'] : '';
@@ -93,8 +105,9 @@ function cleantalk_validate_comment(&$form, &$form_state)
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
     if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
-      if (variable_get('cleantalk_check_comments_automod', 0) == 0 || $spam_result['stop_queue'] == 1)
+      if ($config->get('cleantalk_check_comments_automod') == 0 || $spam_result['stop_queue'] == 1) {
         form_set_error('comment_body', $spam_result['ct_result_comment']);
+      }
     }
   }
 }
@@ -102,9 +115,8 @@ function cleantalk_validate_comment(&$form, &$form_state)
 /**
  * Cleantalk contact message validation function.
  */
-function cleantalk_validate_contact_message(&$form, &$form_state)
-{
-  if (variable_get('cleantalk_check_contact_forms', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+function cleantalk_validate_contact_message(&$form, &$form_state) {
+  if (config_get('cleantalk.settings', 'cleantalk_check_contact_forms') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
 
     $spam_check['type'] = 'contact';
@@ -115,17 +127,17 @@ function cleantalk_validate_contact_message(&$form, &$form_state)
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('comment_body', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
  * Cleantalk webform validation function.
  */
-function cleantalk_validate_webform(&$form, &$form_state)
-{
-  if (variable_get('cleantalk_check_webforms', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+function cleantalk_validate_webform(&$form, &$form_state) {
+  if (config_get('cleantalk.settings', 'cleantalk_check_webforms') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
     $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
@@ -137,102 +149,128 @@ function cleantalk_validate_webform(&$form, &$form_state)
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('comment_body', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
  * Cleantalk forum validation function.
  */
-function cleantalk_validate_forum(&$form, &$form_state)
-{
+function cleantalk_validate_forum(&$form, &$form_state) {
   global $user;
 
-  if (variable_get('cleantalk_check_forum_topics', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+  if (config_get('cleantalk.settings', 'cleantalk_check_forum_topics') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
     $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
     $spam_check['type'] = 'comment';
-    if( isset( $user->mail ) ) {
+    if ( isset( $user->mail ) ) {
       $spam_check['sender_email'] = $user->mail;
-    } else {
-      if (empty($form_state['values']['e_mail']))
-        $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
-      else $spam_check['sender_email'] = $form_state['values']['e_mail'];
     }
-    if (empty($form_state['values']['name']))
+    else {
+      if (empty($form_state['values']['e_mail'])) {
+        $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
+      }
+      else {
+        $spam_check['sender_email'] = $form_state['values']['e_mail'];
+      }
+    }
+    if (empty($form_state['values']['name'])) {
       $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname'] ? $ct_temp_msg_data['nickname'] : '');
-    else $spam_check['sender_nickname'] = $form_state['values']['name'];
-    if (empty($form_state['values']['title']))
+    }
+    else {
+      $spam_check['sender_nickname'] = $form_state['values']['name'];
+    }
+    if (empty($form_state['values']['title'])) {
       $spam_check['message_title'] = ($ct_temp_msg_data['subject'] ? $ct_temp_msg_data['subject'] : '');
-    else $spam_check['message_title'] = $form_state['values']['title'];
-    if (empty($form_state['values']['body']['und'][0]['value']))
+    }
+    else {
+      $spam_check['message_title'] = $form_state['values']['title'];
+    }
+    if (empty($form_state['values']['body']['und'][0]['value'])) {
       $spam_check['message_body'] = ($ct_temp_msg_data['message'] ? $ct_temp_msg_data['message'] : '');
-    else $spam_check['message_body'] = $form_state['values']['body']['und'][0]['value'];
+    }
+    else {
+      $spam_check['message_body'] = $form_state['values']['body']['und'][0]['value'];
+    }
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
 
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('comment_body', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
  * Cleantalk node validation function.
  */
-function cleantalk_validate_node(&$form, &$form_state)
-{
+function cleantalk_validate_node(&$form, &$form_state) {
   global $user;
 
-  if (variable_get('cleantalk_check_added_content', 0) && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
+  if (config_get('cleantalk.settings', 'cleantalk_check_added_content') && CleantalkFuncs::_cleantalk_check_form_submit_handlers($form_state['triggering_element']['#parents'])) {
     $spam_check = array();
     $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
     $spam_check['type'] = 'comment';
-    if( isset( $user->mail ) ) {
+    if ( isset( $user->mail ) ) {
       $spam_check['sender_email'] = $user->mail;
-    } else {
-      if (empty($form_state['values']['e_mail']))
-        $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
-      else $spam_check['sender_email'] = $form_state['values']['e_mail'];
     }
-    if (empty($form_state['values']['name']))
+    else {
+      if (empty($form_state['values']['e_mail'])) {
+        $spam_check['sender_email'] = ($ct_temp_msg_data['email'] ? $ct_temp_msg_data['email'] : '');
+      }
+      else {
+        $spam_check['sender_email'] = $form_state['values']['e_mail'];
+      }
+    }
+    if (empty($form_state['values']['name'])) {
       $spam_check['sender_nickname'] = ($ct_temp_msg_data['nickname'] ? $ct_temp_msg_data['nickname'] : '');
-    else $spam_check['sender_nickname'] = $form_state['values']['name'];
-    if (empty($form_state['values']['title']))
+    }
+    else {
+      $spam_check['sender_nickname'] = $form_state['values']['name'];
+    }
+    if (empty($form_state['values']['title'])) {
       $spam_check['message_title'] = ($ct_temp_msg_data['subject'] ? $ct_temp_msg_data['subject'] : '');
-    else $spam_check['message_title'] = $form_state['values']['title'];
-    if (empty($form_state['values']['body']['und'][0]['value']))
+    }
+    else {
+      $spam_check['message_title'] = $form_state['values']['title'];
+    }
+    if (empty($form_state['values']['body']['und'][0]['value'])) {
       $spam_check['message_body'] = ($ct_temp_msg_data['message'] ? $ct_temp_msg_data['message'] : '');
-    else $spam_check['message_body'] = $form_state['values']['body']['und'][0]['value'];
+    }
+    else {
+      $spam_check['message_body'] = $form_state['values']['body']['und'][0]['value'];
+    }
 
     $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check, form_get_errors());
-    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+    if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
       form_set_error('comment_body', $spam_result['ct_result_comment']);
+    }
   }
 }
 
 /**
- * Implements hook_comment_presave().
+ * Implements hook_comment_presave().().
  */
-function cleantalk_comment_presave($comment)
-{
+function cleantalk_comment_presave($comment) {
   $ct_result = CleantalkFuncs::_cleantalk_ct_result();
 
   if (!empty($ct_result['ct_request_id'])) {
-    if ($ct_result['ct_result_allow'] === 0 && variable_get('cleantalk_check_comments_automod', 0) === 1)
+    if ($ct_result['ct_result_allow'] === 0 && config_get('cleantalk.settings', 'cleantalk_check_comments_automod') === 1) {
       $comment->status = COMMENT_NOT_PUBLISHED;
+    }
   }
 }
 
 /**
- * Implements hook_menu().
+ * Implements hook_menu().().
  */
-function cleantalk_menu()
-{
+function cleantalk_menu() {
   $items['admin/config/cleantalk'] = array(
     'title' => 'Antispam by CleanTalk',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('cleantalk_settings_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'src/Form/CleantalkSettingsForm.php',
@@ -241,7 +279,7 @@ function cleantalk_menu()
   $items['admin/config/cleantalk/settings'] = array(
     'title' => 'Settings',
     'description' => 'Configure module settings',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('cleantalk_settings_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'src/Form/CleantalkSettingsForm.php',
@@ -250,7 +288,7 @@ function cleantalk_menu()
   $items['admin/config/cleantalk/checkusers'] = array(
     'title' => 'Check users',
     'description' => 'Check existing spam users',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('cleantalk_check_users_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'src/Form/CleantalkCheckUsersForm.php',
@@ -259,7 +297,7 @@ function cleantalk_menu()
   $items['admin/config/cleantalk/checkcomments'] = array(
     'title' => 'Check comments',
     'description' => 'Check existing spam comments',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('cleantalk_check_comments_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'src/Form/CleantalkCheckCommentsForm.php',
@@ -271,20 +309,19 @@ function cleantalk_menu()
 /**
  * Cleantalk inner function - alters needed form.
  */
-function _cleantalk_form_alter(&$form, &$form_state, $form_id)
-{
+function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
   if (
-    user_access('administer modules') ||
-    ( path_is_admin(current_path()) && $form_id !== 'forum_node_form' && ! preg_match('|node_form$|', $form_id) ) ||
-    $form_id === 'search_form' ||
-    $form_id === 'user_login_form' ||
-    $form_id === 'search_block_form' ||
+    user_access('administer modules') ||  
+    ( path_is_admin(current_path()) && $form_id !== 'forum_node_form' && ! preg_match('|node_form$|', $form_id) ) ||  
+    $form_id === 'search_form' ||  
+    $form_id === 'user_login_form' ||  
+    $form_id === 'search_block_form' ||  
     $form_id === 'user_login_block'
   ) {
     return;
   }
 
-  if (variable_get('cleantalk_link', 0) != 0) {
+  if (config_get('cleantalk.settings', 'cleantalk_link') != 0) {
     $form['terms_of_use'] = array(
       '#type' => 'item',
       '#markup' => t("<a href='https://cleantalk.org'>Spam</a> blocked by CleanTalk."),
@@ -294,7 +331,8 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
 
   if ($form_id == 'user_register_form') {
     $form['#validate'][] = 'cleantalk_validate_register';
-  } else {
+  }
+  else {
 
     if (preg_match('|comment(.*?)[_-]form|', $form_id)) {
       $form['#validate'][] = 'cleantalk_validate_comment';
@@ -323,27 +361,32 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id)
  * Implements hook_boot()
  */
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function cleantalk_boot() {
-  $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
+  $config = config('cleantalk.settings');
+  $ct_authkey = trim($config->get('cleantalk_authkey'));
 
-  if (variable_get('cleantalk_sfw', 0)) {
+  if ($config->get('cleantalk_sfw')) {
     $sfw = new CleantalkSFW();
 
-    $ct_sfw_last_logs_sent = variable_get('cleantalk_sfw_last_logs_sent', null);
+    $ct_sfw_last_logs_sent = $config->get('cleantalk_sfw_last_logs_sent');
     if ($ct_sfw_last_logs_sent && (time() - $ct_sfw_last_logs_sent > 3600)) {
-      variable_set('cleantalk_sfw_last_logs_sent', time());
+      config_set('cleantalk.settings', 'cleantalk_sfw_last_logs_sent', time());
       $sfw->send_logs($ct_authkey);
     }
 
-    $ct_sfw_last_updated = variable_get('cleantalk_sfw_last_updated', null);
+    $ct_sfw_last_updated = $config->get('cleantalk_sfw_last_updated');
     if ($ct_sfw_last_updated && (time() - $ct_sfw_last_updated > 86400)) {
-      variable_set('cleantalk_sfw_last_updated', time());
+      config_set('cleantalk.settings', 'cleantalk_sfw_last_updated', time());
       $sfw->sfw_update($ct_authkey);
     }
 
     $is_sfw_check = true;
 
-    $sfw->ip_array = (array)CleantalkSFW::ip_get(array('real'), true);
+    $sfw->ip_array = (array) CleantalkSFW::ip_get(array('real'), true);
 
     foreach ($sfw->ip_array as $key => $value) {
       if (isset($_COOKIE['apbct_sfw_pass_key']) && $_COOKIE['apbct_sfw_pass_key'] == md5($value . $ct_authkey)) {
@@ -370,12 +413,17 @@ function cleantalk_boot() {
  * Implements hook_init()
  */
 
-function cleantalk_init()
-{
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function cleantalk_init() {
+  $config = config('cleantalk.settings');
   global $user;
 
-  if (user_access('administer modules') || path_is_admin(current_path()))
+  if (user_access('administer modules') || path_is_admin(current_path())) {
     return;
+  }
 
   // Remote calls
   if (isset($_GET['spbc_remote_call_token'], $_GET['spbc_remote_call_action'], $_GET['plugin_name']) && in_array($_GET['plugin_name'], array('antispam', 'anti-spam', 'apbct'))) {
@@ -384,27 +432,26 @@ function cleantalk_init()
 
   CleantalkFuncs::_cleantalk_apbct_cookies_set();
 
-  drupal_add_js(drupal_get_path('module', 'cleantalk') . '/src/js/apbct-public.js', 'file');
+  backdrop_add_js(backdrop_get_path('module', 'cleantalk') . '/src/js/apbct-public.js', 'file');
 
-  drupal_add_js('ctSetCookie("ct_check_js", "' . CleantalkFuncs::_cleantalk_get_checkjs_value() . '", "0");',
+  backdrop_add_js('ctSetCookie("ct_check_js", "' . CleantalkFuncs::_cleantalk_get_checkjs_value() . '", "0");',  
     array(
-      'type' => 'inline',
-      'scope' => 'footer',
-      'weight' => 5,
-      /*'cache' => FALSE,
-       * This not need here
-       * 'cache' option Used only when 'type' references a JavaScript file
-       * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_add_js/7.x
-       */
-      'every_page' => TRUE,
-    )
+    'type' => 'inline',
+    'scope' => 'footer',
+    'weight' => 5,
+    /*'cache' => FALSE,
+ * This not need here
+ * 'cache' option Used only when 'type' references a JavaScript file
+ * https://api.drupal.org/api/backdrop/includes%21common.inc/function/backdrop_add_js/7.x
+ */
+    'every_page' => TRUE,
+  )
   );
 
-  $ct_authkey = trim(variable_get('cleantalk_authkey', ''));
+  $ct_authkey = trim($config->get('cleantalk_authkey'));
   if ($ct_authkey != '') {
 
-    if (sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && variable_get('cleantalk_check_ccf', 0) && strpos($_SERVER['REQUEST_URI'], 'cron.php') === false && strpos($_SERVER['HTTP_USER_AGENT'], 'libwww-perl') === false && strpos($_SERVER['REQUEST_URI'], 'checkout/add') === false) //Custom Contact forms
-    {
+    if (sizeof($_POST) > 0 && !isset($_POST['form_build_id']) && !isset($_POST['form_id']) && $config->get('cleantalk_check_ccf') && strpos($_SERVER['REQUEST_URI'], 'cron.php') === false && strpos($_SERVER['HTTP_USER_AGENT'], 'libwww-perl') === false && strpos($_SERVER['REQUEST_URI'], 'checkout/add') === false) {
       $spam_check = array();
       $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
@@ -418,15 +465,15 @@ function cleantalk_init()
       if ($spam_check['sender_email'] != '' && (!empty($spam_check['message_title']) || !empty($spam_check['message_body']))) {
         $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
 
-        if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
-          drupal_set_message($spam_result['ct_result_comment'], 'error');
+        if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
+          backdrop_set_message($spam_result['ct_result_comment'], 'error');
+        }
       }
 
     }
 
-    if (isset($_GET['q']) && strpos($_GET['q'], 'search') !== false && module_exists('search')) // Search form
-    {
-      if (variable_get('cleantalk_add_search_noindex', 0)) {
+    if (isset($_GET['q']) && strpos($_GET['q'], 'search') !== false && module_exists('search')) {
+      if ($config->get('cleantalk_add_search_noindex')) {
         // Setup index search results
         $skip_index_results = array(
           '#type' => 'html_tag',
@@ -434,14 +481,14 @@ function cleantalk_init()
           '#attributes' => array(
             'name' => 'robots',
             'content' => 'noindex',
-          )
+          ),
         );
 
         // Add header meta tag for skip index results
-        drupal_add_html_head($skip_index_results, 'skip_index_results');
+        backdrop_add_html_head($skip_index_results, 'skip_index_results');
       }
 
-      if (variable_get('cleantalk_check_search_form', 0)) {
+      if ($config->get('cleantalk_check_search_form')) {
         $get_query = explode("/", $_GET['q']);
 
         if (count($get_query) > 2) {
@@ -456,8 +503,9 @@ function cleantalk_init()
           if ($spam_check['sender_email'] != '' || $spam_check['message_body']) {
             $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
 
-            if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1)
+            if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
               CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);
+            }
           }
         }
       }
@@ -467,11 +515,14 @@ function cleantalk_init()
 }
 
 /*
-* implemments hook_uc_order - UberCart hook for order processing
-*/
+ * implemments hook_uc_order - UberCart hook for order processing
+ */
 
-function cleantalk_uc_order($op, $order, $arg2)
-{
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function cleantalk_uc_order($op, $order, $arg2) {
   $spam_check = array();
   $ct_temp_msg_data = CleantalkFuncs::_cleantalk_get_fields_any($_POST);
 
@@ -487,8 +538,40 @@ function cleantalk_uc_order($op, $order, $arg2)
   if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
     if (strpos($_SERVER['REQUEST_URI'], 'ajax') !== false) {
       print $spam_result['ct_result_comment'];
-      drupal_exit();
-    } else
+      backdrop_exit();
+    }
+    else {
       CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);
+    }
   }
+}
+
+
+/**
+ * Used in CleantalkSettingsForm. Previously relied on a drupal function, that function has been copied and renamed here.
+ * @param unknown $element
+ * @param unknown $form_state
+ */
+function cleantalk_element_validate_integer_positive($element, &$form_state) {
+  $value = $element['#value'];
+  if ($value !== '' && (!is_numeric($value) || intval($value) != $value || $value <= 0)) {
+    form_error($element, t('%name must be a positive integer.', array(
+        '%name' => $element['#title'],
+    )));
+  }
+}
+
+
+/**
+ * Implements hook_autoload_info().
+ */
+function cleantalk_autoload_info() {
+  return array(
+    'Cleantalk' => 'src/Cleantalk.php',
+    'CleantalkFuncs' => 'src/CleantalkFuncs.php',
+    'CleantalkHelper' => 'src/CleantalkHelper.php',
+    'CleantalkRequest' => 'src/CleantalkRequest.php',
+    'CleantalkResponse' => 'src/CleantalkResponse.php',
+    'CleantalkSFW' => 'src/CleantalkSFW.php',
+  );
 }

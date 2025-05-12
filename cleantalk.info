@@ -1,4 +1,5 @@
 name = Anti-Spam by CleanTalk
 description = Anti-Spam service from <a target="_blank" href="https://cleantalk.org">CleanTalk</a> to protect your site
 configure = admin/config/cleantalk
-core = 7.x
+backdrop = 1.x
+type = module

@@ -9,241 +9,246 @@ require_once(dirname(__FILE__) . '/CleantalkHelper.php');
  * copyright (C) 2014 CleanTalk team (http://cleantalk.org)
  * license GNU/GPL: http://www.gnu.org/copyleft/gpl.html
  * see https://github.com/CleanTalk/php-antispam
-*/
+ */
 
 class CleantalkSFW extends CleantalkHelper {
 
-	public $ip = 0;
-	public $ip_str = '';
-	public $ip_array = Array();
-	public $ip_str_array = Array();
-	public $blocked_ip = '';
-	public $blocked_network = '';
-	public $passed_ip = '';
-	public $result = false;
-	
-	//Database variables
+  public $ip = 0;
+  public $ip_str = '';
+  public $ip_array = array();
+  public $ip_str_array = array();
+  public $blocked_ip = '';
+  public $blocked_network = '';
+  public $passed_ip = '';
+  public $result = false;
 
-	private $db_result_data = array();
-	
-	public function __construct() {
+  //Database variables
 
-		//$this->db = \Drupal::database();
+  private $db_result_data = array();
 
-	}
-	
-	/*
-	*	Getting arrays of IP (REMOTE_ADDR, X-Forwarded-For, X-Real-Ip, Cf_Connecting_Ip)
-	*	reutrns array('remote_addr' => 'val', ['x_forwarded_for' => 'val', ['x_real_ip' => 'val', ['cloud_flare' => 'val']]])
-	*/
+  public function __construct() {
 
-	static public function ip_get($ips_input = array('real', 'remote_addr', 'x_forwarded_for', 'x_real_ip', 'cloud_flare'), $v4_only = true) {
-		
-		$result = (array)parent::ip_get($ips_input, $v4_only);
-		
-		$result = !empty($result) ? $result : array();
-		
-		if (isset($_GET['sfw_test_ip'])) {
+    //$this->db = \Backdrop::database();
 
-			if (self::ip_validate($_GET['sfw_test_ip']) !== false) {
+  }
 
-				$result['sfw_test'] = $_GET['sfw_test_ip'];
+  /*
+   *	Getting arrays of IP (REMOTE_ADDR, X-Forwarded-For, X-Real-Ip, Cf_Connecting_Ip)
+   *	reutrns array('remote_addr' => 'val', ['x_forwarded_for' => 'val', ['x_real_ip' => 'val', ['cloud_flare' => 'val']]])
+   */
 
-			}
-		}
-		
-		return $result;
-		
-	}
-	
-	/*
-	*	Checks IP via Database
-	*/
+  static public function ip_get($ips_input = array('real', 'remote_addr', 'x_forwarded_for', 'x_real_ip', 'cloud_flare'), $v4_only = true) {
 
-	public function check_ip() {
-		
-		foreach($this->ip_array as $current_ip){
+    $result = (array) parent::ip_get($ips_input, $v4_only);
 
-			$this->db_result_data = db_query('SELECT network FROM {cleantalk_sfw} WHERE network = :network & mask', array(':network' => sprintf("%u", ip2long($current_ip))))->fetchField();
-			
-			if (!empty($this->db_result_data)) {
+    $result = !empty($result) ? $result : array();
 
-				$this->result = true;
-				$this->blocked_ip = $current_ip;
-				$this->blocked_network = $this->db_result_data;
+    if (isset($_GET['sfw_test_ip'])) {
 
-			}
+      if (self::ip_validate($_GET['sfw_test_ip']) !== false) {
 
-			else {
+        $result['sfw_test'] = $_GET['sfw_test_ip'];
 
-				$this->passed_ip = $current_ip;
+      }
+    }
 
-			}
-		}
-	}
-		
-	/*
-	*	Add entry to SFW log
-	*/
+    return $result;
 
-	public function sfw_update_logs($ip, $result){
-		
-		if($ip === NULL || $result === NULL) {
+  }
 
-			return;
+  /*
+   *	Checks IP via Database
+   */
 
-		}
-		
-		db_merge('cleantalk_sfw_logs')->key(array('ip' => $ip))->fields(array('ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()))->expression('all_entries', 'all_entries + :inc', array(':inc' => 1))->expression('blocked_entries', 'blocked_entries + :inc', array(':inc' => 1))->expression('entries_timestamp', time())->execute();
-	}
-	
-	/*
-	* Updates SFW local base
-	* 
-	* return mixed true || array('error' => true, 'error_string' => STRING)
-	*/
+  public function check_ip() {
 
-	public function sfw_update($ct_key){
-		
-		$result = self::api_method__get_2s_blacklists_db($ct_key);
-		
-		if (empty($result['error'])) {
+    foreach ($this->ip_array as $current_ip) {
 
-			db_truncate('cleantalk_sfw')->execute();
-						
-			// Cast result to int
+      $this->db_result_data = db_query('SELECT network FROM {cleantalk_sfw} WHERE network = :network & mask', array(':network' => sprintf("%u", ip2long($current_ip))))->fetchField();
 
-			foreach ($result as $value) {
+      if (!empty($this->db_result_data)) {
 
-				$value[0] = intval($value[0]);
-				$value[1] = intval($value[1]);
+        $this->result = true;
+        $this->blocked_ip = $current_ip;
+        $this->blocked_network = $this->db_result_data;
 
-			} 
+      }
 
-			unset($value);
-			$values = array();
+      else {
 
-			for ($i=0, $arr_count = count($result); $i < $arr_count; $i++) {
+        $this->passed_ip = $current_ip;
 
-				$values[] = array('network' => $result[$i][0], 'mask' => $result[$i][1]);
+      }
+    }
+  }
 
-			}
+  /*
+   *	Add entry to SFW log
+   */
 
-			if (count($values) > 0) {
+  public function sfw_update_logs($ip, $result) {
 
-				$query = db_insert('cleantalk_sfw')->fields(['network', 'mask']);
+    if ($ip === NULL || $result === NULL) {
 
-				foreach ($values as $record) {
+      return;
 
-					$query->values($record);
+    }
 
-				}
-				$query->execute();
+    db_merge('cleantalk_sfw_logs')->key(array('ip' => $ip))->fields(array('ip' => $ip, 'all_entries' => 1, 'blocked_entries' => 1, 'entries_timestamp' => time()))->expression('all_entries', 'all_entries + :inc', array(':inc' => 1))->expression('blocked_entries', 'blocked_entries + :inc', array(':inc' => 1))->expression('entries_timestamp', time())->execute();
+  }
 
-			}
-			
-			return true;
-			
-		}
+  /*
+   * Updates SFW local base
+   *
+   * return mixed true || array('error' => true, 'error_string' => STRING)
+   */
 
-		else {
+  public function sfw_update($ct_key) {
 
-			return $result;
+    $result = self::api_method__get_2s_blacklists_db($ct_key);
 
-		}
-	}
-	
-	/*
-	* Sends and wipe SFW log
-	* 
-	* returns mixed true || array('error' => true, 'error_string' => STRING)
-	*/
+    if (empty($result['error'])) {
 
-	public function send_logs($ct_key) {
-		
-		//Getting logs
+      db_truncate('cleantalk_sfw')->execute();
 
-		$this->db_result_data = db_query('SELECT * FROM {cleantalk_sfw_logs}')->fetchAll();
+      // Cast result to int
 
-		if (count($this->db_result_data)) {
-			
-			//Compile logs
+      foreach ($result as $value) {
 
-			$data = array();
+        $value[0] = intval($value[0]);
+        $value[1] = intval($value[1]);
 
-			foreach($this->db_result_data as $key => $value) {
+      }
 
-				$data[] = array(trim($value->ip), $value->all_entries, $value->all_entries-$value->blocked_entries, $value->entries_timestamp);
+      unset($value);
+      $values = array();
 
-			}
+      for ($i = 0, $arr_count = count($result); $i < $arr_count; $i++) {
 
-			unset($key, $value);
-			
-			//Sending the request
+        $values[] = array(
+          'network' => $result[$i][0],
+          'mask' => $result[$i][1],
+        );
 
-			$result = self::api_method__sfw_logs($ct_key, $data);
-			
-			//Checking answer and deleting all lines from the table
+      }
 
-			if(empty($result['error'])) {
+      if (count($values) > 0) {
 
-				if($result['rows'] == count($data)) {
+        $query = db_insert('cleantalk_sfw')->fields(['network', 'mask']);
 
-					db_truncate('cleantalk_sfw_logs')->execute();
-					return true;
+        foreach ($values as $record) {
 
-				}
-			}
+          $query->values($record);
 
-			else {
+        }
+        $query->execute();
 
-				return $result;
+      }
 
-			}
-				
-		}
+      return true;
 
-		else {
+    }
 
-			return array('error' => true, 'error_string' => 'NO_LOGS_TO_SEND');
+    else {
 
-		}
-	}
-	
-	/*
-	* Shows DIE page
-	* 
-	* Stops script executing
-	*/	
-	public function sfw_die($api_key, $cookie_prefix = '', $cookie_domain = ''){
-		
-		// File exists?
-		if(file_exists(dirname(__FILE__)."/sfw_die_page.html")){
-			$sfw_die_page = file_get_contents(dirname(__FILE__)."/sfw_die_page.html");
-		}else{
-			print "IP BLACKLISTED";
-			die();
-		}
-		
-		// Service info
-		$sfw_die_page = str_replace('{REMOTE_ADDRESS}', $this->blocked_ip, $sfw_die_page);
-		$sfw_die_page = str_replace('{REQUEST_URI}', $_SERVER['REQUEST_URI'], $sfw_die_page);
-		$sfw_die_page = str_replace('{SFW_COOKIE}', md5($this->blocked_ip.$api_key), $sfw_die_page);
-		
-		// Headers
-		if(headers_sent() === false){
-			header('Expires: '.date(DATE_RFC822, mktime(0, 0, 0, 1, 1, 1971)));
-			header('Cache-Control: no-store, no-cache, must-revalidate');
-			header('Cache-Control: post-check=0, pre-check=0', FALSE);
-			header('Pragma: no-cache');
-			header("HTTP/1.0 403 Forbidden");
-			$sfw_die_page = str_replace('{GENERATED}', "", $sfw_die_page);
-		}else{
-			$sfw_die_page = str_replace('{GENERATED}', "<h2 class='second'>The page was generated at&nbsp;".date("D, d M Y H:i:s")."</h2>",$sfw_die_page);
-		}
+      return $result;
 
-		print $sfw_die_page;
-		die();
-		
-	}
+    }
+  }
+
+  /*
+   * Sends and wipe SFW log
+   *
+   * returns mixed true || array('error' => true, 'error_string' => STRING)
+   */
+
+  public function send_logs($ct_key) {
+
+    //Getting logs
+
+    $this->db_result_data = db_query('SELECT * FROM {cleantalk_sfw_logs}')->fetchAll();
+
+    if (count($this->db_result_data)) {
+
+      //Compile logs
+
+      $data = array();
+
+      foreach ($this->db_result_data as $key => $value) {
+
+        $data[] = array(trim($value->ip), $value->all_entries, $value->all_entries -$value->blocked_entries, $value->entries_timestamp);
+
+      }
+
+      unset($key, $value);
+
+      //Sending the request
+
+      $result = self::api_method__sfw_logs($ct_key, $data);
+
+      //Checking answer and deleting all lines from the table
+
+      if (empty($result['error'])) {
+
+        if ($result['rows'] == count($data)) {
+
+          db_truncate('cleantalk_sfw_logs')->execute();
+          return true;
+
+        }
+      }
+
+      else {
+
+        return $result;
+
+      }
+
+    }
+
+    else {
+
+      return array('error' => true, 'error_string' => 'NO_LOGS_TO_SEND');
+
+    }
+  }
+
+  /*
+   * Shows DIE page
+   *
+   * Stops script executing
+   */
+  public function sfw_die($api_key, $cookie_prefix = '', $cookie_domain = '') {
+
+    // File exists?
+    if (file_exists(dirname(__FILE__) . "/sfw_die_page.html")) {
+      $sfw_die_page = file_get_contents(dirname(__FILE__) . "/sfw_die_page.html");
+    }
+    else {
+      print "IP BLACKLISTED";
+      die();
+    }
+
+    // Service info
+    $sfw_die_page = str_replace('{REMOTE_ADDRESS}', $this->blocked_ip, $sfw_die_page);
+    $sfw_die_page = str_replace('{REQUEST_URI}', $_SERVER['REQUEST_URI'], $sfw_die_page);
+    $sfw_die_page = str_replace('{SFW_COOKIE}', md5($this->blocked_ip . $api_key), $sfw_die_page);
+
+    // Headers
+    if (headers_sent() === false) {
+      header('Expires: ' . date(DATE_RFC822, mktime(0, 0, 0, 1, 1, 1971)));
+      header('Cache-Control: no-store, no-cache, must-revalidate');
+      header('Cache-Control: post-check=0, pre-check=0', FALSE);
+      header('Pragma: no-cache');
+      header("HTTP/1.0 403 Forbidden");
+      $sfw_die_page = str_replace('{GENERATED}', "", $sfw_die_page);
+    }
+    else {
+      $sfw_die_page = str_replace('{GENERATED}', "<h2 class='second'>The page was generated at&nbsp;" . date("D, d M Y H:i:s") . "</h2>", $sfw_die_page);
+    }
+
+    print $sfw_die_page;
+    die();
+
+  }
 }

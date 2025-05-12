@@ -8,8 +8,7 @@
 /**
  * Implements hook_install().
  */
-function cleantalk_install() 
-{  
+function cleantalk_install() {
   db_drop_table('cleantalk_timelabels');
   $cleantalk_timelabels = array(
     'description' => 'Timelabels for admin notification sending.',
@@ -56,13 +55,13 @@ function cleantalk_install()
       ),
     ),
     'indexes' => array(
-      'network'        => array('network'),
-      ),
+      'network' => array('network'),
+    ),
   );
   db_create_table('cleantalk_sfw', $cleantalk_sfw);
-  
+
   db_drop_table('cleantalk_sfw_logs');
-    $cleantalk_sfw_logs = array(
+  $cleantalk_sfw_logs = array(
     'description' => 'SpamFireWall logs.',
     'fields' => array(
       'ip' => array(
@@ -70,107 +69,134 @@ function cleantalk_install()
         'length' => 15,
         'not null' => TRUE,
         'default' => '',
-        'description' => 'IP.'
+        'description' => 'IP.',
       ),
       'all_entries' => array(
         'type' => 'int',
-        'description' => 'All entries.'
+        'description' => 'All entries.',
       ),
-    'blocked_entries' => array(
+      'blocked_entries' => array(
         'type' => 'int',
-        'description' => 'Blocked entries.'
+        'description' => 'Blocked entries.',
       ),
       'entries_timestamp' => array(
         'type' => 'int',
-        'description' => 'time().'
-      )
+        'description' => 'time().',
+      ),
     ),
     'primary key' => array('ip'),
   );
   db_create_table('cleantalk_sfw_logs', $cleantalk_sfw_logs);
 
   db_drop_table('cleantalk_sessions');
-    $cleantalk_sessions = array(
+  $cleantalk_sessions = array(
     'description' => 'Alternative cookies table',
     'fields' => array(
       'id' => array(
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
-        'description' => 'id.'
+        'description' => 'id.',
       ),
       'name' => array(
         'type' => 'varchar',
         'length' => 40,
         'not null' => TRUE,
         'default' => '',
-        'description' => 'name.'
+        'description' => 'name.',
       ),
-    'value' => array(
+      'value' => array(
         'type' => 'text',
         'not null' => FALSE,
         'default' => NULL,
-        'description' => 'value.'
+        'description' => 'value.',
       ),
       'last_update' => array(
         'type' => 'datetime',
         'mysql_type' => 'datetime',
         'not null' => FALSE,
         'default' => NULL,
-        'description' => 'time().'
-      )
+        'description' => 'time().',
+      ),
     ),
-    'primary key' => array('id','name'),
+    'primary key' => array('id', 'name'),
   );
-  
+
   db_create_table('cleantalk_sessions', $cleantalk_sessions);
+  
+  
+  
+  
+  $config = config('cleantalk.settings');
+  $config->set('cleantalk_check_register', '0');
+  $config->set('cleantalk_check_comments', '0');
+  $config->set('cleantalk_check_comments_automod', '0');
+  $config->set('cleantalk_check_contact_forms', '0');
+  $config->set('cleantalk_check_webforms', '0');
+  $config->set('cleantalk_check_forum_topics', '0');
+  $config->set('cleantalk_check_added_content', '0');
+  $config->set('cleantalk_link', '0');
+  $config->set('cleantalk_authkey', '0');
+  $config->set('cleantalk_sfw', '0');
+  $config->set('cleantalk_sfw_last_logs_sent', 'null');
+  $config->set('cleantalk_sfw_last_updated', 'null');
+  $config->set('cleantalk_check_ccf', '0');
+  $config->set('cleantalk_add_search_noindex', '0');
+  $config->set('cleantalk_check_search_form', '0');
+  $config->save();
+  
+  
+  
+  
+  
+  
 }
 /**
  * Implements hook_uninstall().
  */
 function cleantalk_uninstall() {
-  variable_del('cleantalk_check_register');
-  variable_del('cleantalk_authkey');
-  variable_del('cleantalk_check_ccf');
-  variable_del('cleantalk_link');
-  variable_del('cleantalk_sfw');
-  variable_del('cleantalk_check_comments');
-  variable_del('cleantalk_check_comments_automod');
-  variable_del('cleantalk_check_comments_min_approved');
-  variable_del('cleantalk_check_webforms');
-  variable_del('cleantalk_check_contact_forms');
-  variable_del('cleantalk_check_forum_topics');
-  variable_del('cleantalk_check_search_form');
-  variable_del('cleantalk_url_exclusions');
-  variable_del('cleantalk_url_exclusions_regexp');
-  variable_del('cleantalk_fields_exclusions');
-  variable_del('cleantalk_roles_exclusions');
-  variable_del('cleantalk_work_url');
-  variable_del('cleantalk_server_url');
-  variable_del('cleantalk_server_ttl');
-  variable_del('cleantalk_server_changed');
-  variable_del('cleantalk_sfw_last_logs_sent');
-  variable_del('cleantalk_sfw_last_updated');
-  variable_del('cleantalk_api_show_notice');
-  variable_del('cleantalk_api_renew');
-  variable_del('cleantalk_api_trial');
-  variable_del('cleantalk_api_user_token');
-  variable_del('cleantalk_api_spam_count');
-  variable_del('cleantalk_api_moderate_ip');
-  variable_del('cleantalk_api_moderate');
-  variable_del('cleantalk_api_show_review');
-  variable_del('cleantalk_api_service_id');
-  variable_del('cleantalk_api_license_trial');
-  variable_del('cleantalk_api_account_name_ob');
-  variable_del('cleantalk_api_ip_license');
-  variable_del('cleantalk_show_renew_banner');
-  variable_del('cleantalk_add_search_noindex');
-  variable_del('cleantalk_set_cookies');
-  variable_del('cleantalk_alternative_cookies_session');
-  
+  config_clear('cleantalk.settings', 'cleantalk_check_register');
+  config_clear('cleantalk.settings', 'cleantalk_authkey');
+  config_clear('cleantalk.settings', 'cleantalk_check_ccf');
+  config_clear('cleantalk.settings', 'cleantalk_link');
+  config_clear('cleantalk.settings', 'cleantalk_sfw');
+  config_clear('cleantalk.settings', 'cleantalk_check_comments');
+  config_clear('cleantalk.settings', 'cleantalk_check_comments_automod');
+  config_clear('cleantalk.settings', 'cleantalk_check_comments_min_approved');
+  config_clear('cleantalk.settings', 'cleantalk_check_webforms');
+  config_clear('cleantalk.settings', 'cleantalk_check_contact_forms');
+  config_clear('cleantalk.settings', 'cleantalk_check_forum_topics');
+  config_clear('cleantalk.settings', 'cleantalk_check_search_form');
+  config_clear('cleantalk.settings', 'cleantalk_url_exclusions');
+  config_clear('cleantalk.settings', 'cleantalk_url_exclusions_regexp');
+  config_clear('cleantalk.settings', 'cleantalk_fields_exclusions');
+  config_clear('cleantalk.settings', 'cleantalk_roles_exclusions');
+  config_clear('cleantalk.settings', 'cleantalk_work_url');
+  config_clear('cleantalk.settings', 'cleantalk_server_url');
+  config_clear('cleantalk.settings', 'cleantalk_server_ttl');
+  config_clear('cleantalk.settings', 'cleantalk_server_changed');
+  config_clear('cleantalk.settings', 'cleantalk_sfw_last_logs_sent');
+  config_clear('cleantalk.settings', 'cleantalk_sfw_last_updated');
+  config_clear('cleantalk.settings', 'cleantalk_api_show_notice');
+  config_clear('cleantalk.settings', 'cleantalk_api_renew');
+  config_clear('cleantalk.settings', 'cleantalk_api_trial');
+  config_clear('cleantalk.settings', 'cleantalk_api_user_token');
+  config_clear('cleantalk.settings', 'cleantalk_api_spam_count');
+  config_clear('cleantalk.settings', 'cleantalk_api_moderate_ip');
+  config_clear('cleantalk.settings', 'cleantalk_api_moderate');
+  config_clear('cleantalk.settings', 'cleantalk_api_show_review');
+  config_clear('cleantalk.settings', 'cleantalk_api_service_id');
+  config_clear('cleantalk.settings', 'cleantalk_api_license_trial');
+  config_clear('cleantalk.settings', 'cleantalk_api_account_name_ob');
+  config_clear('cleantalk.settings', 'cleantalk_api_ip_license');
+  config_clear('cleantalk.settings', 'cleantalk_show_renew_banner');
+  config_clear('cleantalk.settings', 'cleantalk_add_search_noindex');
+  config_clear('cleantalk.settings', 'cleantalk_set_cookies');
+  config_clear('cleantalk.settings', 'cleantalk_alternative_cookies_session');
+
   db_drop_table('cleantalk_timelabels');
   db_drop_table('cleantalk_sfw');
   db_drop_table('cleantalk_sfw_logs');
-  db_drop_table('cleantalk_sessions');  
+  db_drop_table('cleantalk_sessions');
 }
 

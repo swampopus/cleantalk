@@ -12,7 +12,7 @@ Requirements
 
 * While this module comes with the CleanTalk PHP-antispam classes,
   should you need them, they are available at https://github.com/CleanTalk/php-antispam
-* You will need to sign up with https://cleantalk.org to get your access key.
+* You will need to sign up with https://cleantalk.org to get your access key for your site.
 
 
 Installation
@@ -47,9 +47,12 @@ How it works
   decision to approve or deny the message/registration.
 
 CleanTalk Service Testing  (once installed)
-* Try to register account with "stop_email@example.com" as email address.
-* Set "Enable comments test via stop list" flag at https://cleantalk.org/my/
-* Then try to put comment with "stop_word" in its body.
+* Set up a website with CleanTalk. Go to the site's settings link from https://cleantalk.org/my/
+* Set "Enable messages filtration using stop-words" checkbox.
+* On the right-side of the screen, go to "Personal Lists", and click the 'Add new filter' button.
+* From the pull-down, select "Stop word".  In the box, type stop_word, then click "Blacklist" button.
+* Back on your Backdrop site, in the CleanTalk settings form, enable for the site's contact form.
+* Fill out the contact form with "stop_word" in its body.  You should see a "Forbidden" message and be unable to send.
 
 
 Current Maintainers
