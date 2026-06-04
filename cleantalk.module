@@ -15,7 +15,8 @@ define('APBCT_SESSION__CHANCE_TO_CLEAN', 100);
  */
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter().().
+ * Implements hook_form_BASE_FORM_ID_alter().
+().
  */
 function cleantalk_form_alter(&$form, &$form_state, $form_id) {
   _cleantalk_form_alter($form, $form_state, $form_id);
@@ -252,7 +253,8 @@ function cleantalk_validate_node(&$form, &$form_state) {
 }
 
 /**
- * Implements hook_comment_presave().().
+ * Implements hook_comment_presave().
+().
  */
 function cleantalk_comment_presave($comment) {
   $ct_result = CleantalkFuncs::_cleantalk_ct_result();
@@ -265,7 +267,8 @@ function cleantalk_comment_presave($comment) {
 }
 
 /**
- * Implements hook_menu().().
+ * Implements hook_menu().
+().
  */
 function cleantalk_menu() {
   $items['admin/config/cleantalk'] = array(
@@ -536,13 +539,7 @@ function cleantalk_uc_order($op, $order, $arg2) {
   $spam_result = CleantalkFuncs::_cleantalk_check_spam($spam_check);
 
   if (isset($spam_result) && is_array($spam_result) && $spam_result['errno'] == 0 && $spam_result['allow'] != 1) {
-    if (strpos($_SERVER['REQUEST_URI'], 'ajax') !== false) {
-      print $spam_result['ct_result_comment'];
-      backdrop_exit();
-    }
-    else {
-      CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);
-    }
+    CleantalkFuncs::_cleantalk_die($spam_result['ct_result_comment']);
   }
 }
 
