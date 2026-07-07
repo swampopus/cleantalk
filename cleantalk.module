@@ -360,15 +360,28 @@ function _cleantalk_form_alter(&$form, &$form_state, $form_id) {
     }
   }
 }
-/**
- * Implements hook_boot()
- */
 
 /**
- * @todo Please document this function.
- * @see http://drupal.org/node/1354
+ * Implements hook_boot()
+ * 
+ * This function is performing these steps:
+ * 
+ * 1. It first checks if you have the "Spam FireWall" enabled, which prevents bots from accessing your site and wasting resources.
+ * 2. If it's enabled, the module sees if it needs to send our logs to Cleantalk, and then if it should download known bot IP addresses FROM Cleantalk.
+ * 3. Finally, it chcks if the visitor's IP address is a possible bot, and if so, it blocks the bot from going any further.
+ * 
+ * Step 3 is why this is in hook_boot-- it stops the bot before it has a chance to eat up any more resources.
+ * 
  */
 function cleantalk_boot() {
+
+  // In certain command-line script situations, backdrop may load this module before being fully bootstrapped.
+  // If that's the case, backdrop_json_encode() will not be defined, as well as other core functions.   
+  // If this is the case, we will return harmlessly to avoid a fatal error when trying to call our config_* functions.
+  if (!function_exists('backdrop_json_encode')) {
+    return;
+  }
+  
   $config = config('cleantalk.settings');
   $ct_authkey = trim($config->get('cleantalk_authkey'));
 
@@ -410,6 +423,7 @@ function cleantalk_boot() {
       }
     }
   }
+  
 }
 
 /**
