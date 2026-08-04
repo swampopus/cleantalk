@@ -58,11 +58,13 @@ CleanTalk Service Testing  (once installed)
 Current Maintainers
 -------------------
 
-- [Richard Peacock](https://github.com/swampopus) - Originally ported to Backdrop CMS.
+- [Richard Peacock](https://github.com/swampopus)
 - Seeking additional maintainers.
 
 Credits
 -------
+
+- Ported to Backdrop CMS by [Richard Peacock](https://github.com/swampopus)
 
 This module is based on the Drupal module cleantalk-7.x-5.0
 
